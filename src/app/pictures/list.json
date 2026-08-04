@@ -12,8 +12,16 @@
 		"uploadedAt": "2026-08-04T18:33:25.464Z",
 		"description": "我对这个AI生成的图片非常满意，记录一下",
 		"images": [
-			"/images/pictures/68e748884a51ee06.png",
-			"/images/pictures/58a88273cf67a71a.png"
+			"blob:https://my-blog-public.vercel.app/262974db-60f6-440e-9ae1-82fce74db88d",
+			"blob:https://my-blog-public.vercel.app/52b7d044-6bd2-4438-81d5-1ee8b780ebed"
+		]
+	},
+	{
+		"id": "1785868488403-af139bd7edc5e",
+		"uploadedAt": "2026-08-04T18:34:48.403Z",
+		"description": "这个是赵云宇阿斗的小游戏，在8月5号这天更新，武器全没了，我非常生气😡😡",
+		"images": [
+			"/images/pictures/e4266aa8efc681a3.jpg"
 		]
 	}
 ]
