@@ -4,7 +4,16 @@
 		"uploadedAt": "2026-08-04T18:31:11.019Z",
 		"description": "好看🤩",
 		"images": [
-			"/images/pictures/e8ea30ade1f4669b.png"
+			"blob:https://my-blog-public.vercel.app/fb4a2117-215e-4df0-9cfd-bce811dfbe62"
+		]
+	},
+	{
+		"id": "1785868405464-8b1d61b240ad2",
+		"uploadedAt": "2026-08-04T18:33:25.464Z",
+		"description": "我对这个AI生成的图片非常满意，记录一下",
+		"images": [
+			"/images/pictures/68e748884a51ee06.png",
+			"/images/pictures/58a88273cf67a71a.png"
 		]
 	}
 ]
