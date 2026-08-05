@@ -179,6 +179,9 @@ export default function MusicCard() {
 				<button onClick={togglePlayPause} className='flex h-10 w-10 items-center justify-center rounded-full bg-white transition-opacity hover:opacity-80'>
 					{isPlaying ? <Pause className='text-brand h-4 w-4' /> : <PlaySVG className='text-brand ml-1 h-4 w-4' />}
 				</button>
+				<button onClick={nextSong} className='flex h-10 w-10 items-center justify-center rounded-full bg-white/80 transition-opacity hover:opacity-60'>
+					<SkipForward className='text-brand h-4 w-4' />
+				</button>
 			</Card>
 		</HomeDraggableLayer>
 	)
