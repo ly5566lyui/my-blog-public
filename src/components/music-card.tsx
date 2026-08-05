@@ -8,7 +8,7 @@ import { CARD_SPACING } from '@/consts'
 import MusicSVG from '@/svgs/music.svg'
 import PlaySVG from '@/svgs/play.svg'
 import { HomeDraggableLayer } from '../app/(home)/home-draggable-layer'
-import { Pause } from 'lucide-react'
+import { Pause, SkipForward } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import clsx from 'clsx'
 
@@ -132,6 +132,13 @@ export default function MusicCard() {
 
 	const togglePlayPause = () => {
 		setIsPlaying(!isPlaying)
+	}
+
+	const nextSong = () => {
+		const nextIndex = (currentIndex + 1) % MUSIC_FILES.length
+		setCurrentIndex(nextIndex)
+		setIsPlaying(true)
+		setProgress(0)
 	}
 
 	// Hide component if not on home page and not playing
