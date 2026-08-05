@@ -10,6 +10,7 @@ import { useConfigStore } from '@/app/(home)/stores/config-store'
 import { ScrollTopButton } from '@/components/scroll-top-button'
 import MusicCard from '@/components/music-card'
 import { CatAnimation } from '@/components/cat-animation'
+import '@dotlottie/react-player/dist/index.css'
 
 export default function Layout({ children }: PropsWithChildren) {
 	useCenterInit()
@@ -58,7 +59,7 @@ export default function Layout({ children }: PropsWithChildren) {
 				<NavCard />
 
 				{!maxSM && cardStyles.musicCard?.enabled !== false && <MusicCard />}
-				<CatAnimation />
+								<CatAnimation />
 			</main>
 
 			{maxSM && init && <ScrollTopButton className='bg-brand/20 fixed right-6 bottom-8 z-50 shadow-md' />}
