@@ -37,32 +37,32 @@
 		"height": 66,
 		"offset": 120,
 		"order": 6,
-		"offsetX": 190,
-		"offsetY": 263,
+		"offsetX": 253,
+		"offsetY": 171,
 		"enabled": true
 	},
 	"socialButtons": {
 		"width": 315,
 		"height": 48,
 		"order": 6,
-		"offsetX": -149,
-		"offsetY": 177,
+		"offsetX": -91,
+		"offsetY": 174,
 		"enabled": true
 	},
 	"shareCard": {
 		"width": 200,
 		"height": 180,
 		"order": 7,
-		"offsetX": -131,
-		"offsetY": 236,
+		"offsetX": -162,
+		"offsetY": 187,
 		"enabled": true
 	},
 	"articleCard": {
 		"width": 266,
 		"height": 160,
 		"order": 8,
-		"offsetX": -465,
-		"offsetY": 256,
+		"offsetX": -473,
+		"offsetY": 210,
 		"enabled": true
 	},
 	"writeButtons": {
@@ -77,16 +77,16 @@
 		"width": 280,
 		"height": 434,
 		"order": 2,
-		"offsetX": -559,
-		"offsetY": -376,
+		"offsetX": -485,
+		"offsetY": -262,
 		"enabled": true
 	},
 	"likePosition": {
 		"width": 54,
 		"height": 54,
 		"order": 8,
-		"offsetX": 106,
-		"offsetY": 325,
+		"offsetX": 88,
+		"offsetY": 290,
 		"enabled": true
 	},
 	"hatCard": {
