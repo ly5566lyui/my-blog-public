@@ -194,7 +194,9 @@ function CardDetail({ draft, setDraft }: CardDetailProps) {
       </div>
     </div>
   )
-}interface ScheduleCardProps {
+}
+
+interface ScheduleCardProps {
   item: ScheduleItem
   isEditMode: boolean
   onOpen: (item: ScheduleItem) => void
@@ -304,7 +306,9 @@ export default function Page() {
     } else {
       void handleSave()
     }
-  }const handleCancel = () => {
+  }
+
+const handleCancel = () => {
     setSchedule(originalSchedule)
     setIsEditMode(false)
     setEditingId(null)
