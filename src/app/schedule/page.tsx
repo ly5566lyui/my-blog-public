@@ -27,7 +27,9 @@ const [isSaving, setIsSaving] = useState(false)
 const [isManageOpen, setIsManageOpen] = useState(false)
 const [draftSchedule, setDraftSchedule] = useState<ScheduleItem[]>([])
 const [newContent, setNewContent] = useState('')
+const [newDate, setNewDate] = useState(dayjs().format('YYYY-MM-DD'))
 const keyInputRef = useRef<HTMLInputElement>(null)
+const addInputRef = useRef<HTMLInputElement>(null)
 const { isAuth, setPrivateKey } = useAuthStore()
 const { siteContent } = useConfigStore()
 const hideEditButton = siteContent.hideEditButton ?? false
@@ -94,8 +96,7 @@ if (!value) {
 toast.error('请输入日程内容')
 return
 }
-const today = dayjs().format('YYYY-MM-DD')
-setDraftSchedule(prev => [...prev, { date: today, content: value, done: false }])
+setDraftSchedule(prev => [...prev, { date: newDate, content: value, done: false }])
 setNewContent('')
 }
 
@@ -147,6 +148,27 @@ const sortedDates = Object.keys(groupedSchedule).sort((a, b) => b.localeCompare(
 const total = schedule.length
 const done = schedule.filter(i => i.done).length
 
+// Inline add (only in edit mode)
+const handleInlineAdd = () => {
+const value = newContent.trim()
+if (!value) {
+toast.error('请输入日程内容')
+return
+}
+const newItem: ScheduleItem = { date: newDate, content: value, done: false }
+setSchedule(prev => [...prev, newItem])
+setNewContent('')
+// Auto save
+toast.success('已添加，点击保存按钮提交到仓库')
+}
+
+const handleInlineToggleDone = (index: number) => {
+const flatList = [...schedule].sort((a, b) => b.date.localeCompare(a.date))
+const total = flatList.length
+const actualIndex = total - 1 - index
+setSchedule(prev => prev.map((item, i) => i === actualIndex ? { ...item, done: !item.done } : item))
+}
+
 return (
 <>
 <input ref={keyInputRef} type='file' accept='.pem' className='hidden'
@@ -169,9 +191,38 @@ if (e.currentTarget) e.currentTarget.value = ''
 )}
 </div>
 
-{sortedDates.length === 0 ? (
+{/* Inline add bar - always visible in edit mode */}
+{isEditMode && (
+<div className='mb-6 flex items-center gap-3 rounded-xl border bg-white/60 p-3'>
+<input
+type='date'
+value={newDate}
+onChange={e => setNewDate(e.target.value)}
+className='w-36 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm'
+/>
+<input
+ref={addInputRef}
+type='text'
+value={newContent}
+onChange={e => setNewContent(e.target.value)}
+onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleInlineAdd() } }}
+placeholder='输入日程内容，回车添加'
+className='flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none'
+/>
+<motion.button
+whileHover={{ scale: 1.05 }}
+whileTap={{ scale: 0.95 }}
+onClick={handleInlineAdd}
+className='brand-btn flex items-center gap-1 px-4 py-2 text-sm'>
+<Plus className='h-4 w-4' />
+添加
+</motion.button>
+</div>
+)}
+
+{sortedDates.length === 0 && !isEditMode ? (
 <div className='text-secondary flex min-h-[40vh] items-center justify-center'>
-<p>暂无日程安排</p>
+<p>暂无日程安排，点击右上角编辑添加</p>
 </div>
 ) : (
 <div className='space-y-8'>
@@ -194,11 +245,12 @@ if (e.currentTarget) e.currentTarget.value = ''
 )}
 </div>
 
+{/* Edit mode buttons */}
 <motion.div initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} className='fixed top-4 right-6 z-50 flex gap-3 max-sm:hidden'>
 {isEditMode ? (
 <>
 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={handleCancel} disabled={isSaving} className='rounded-xl border bg-white/60 px-6 py-2 text-sm'>取消</motion.button>
-<motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={openManageDialog} className='rounded-xl border bg-white/60 px-6 py-2 text-sm'>管理</motion.button>
+<motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={openManageDialog} className='rounded-xl border bg-white/60 px-6 py-2 text-sm'>批量管理</motion.button>
 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={handleSaveClick} disabled={isSaving} className='brand-btn px-6'>{isSaving ? '保存中...' : buttonText}</motion.button>
 </>
 ) : (
@@ -208,6 +260,7 @@ if (e.currentTarget) e.currentTarget.value = ''
 )}
 </motion.div>
 
+{/* Manage dialog */}
 <DialogModal open={isManageOpen} onClose={cancelManageChanges} className='card static w-[600px] max-sm:w-full'>
 <div className='space-y-4'>
 <div className='flex items-center gap-3'>
