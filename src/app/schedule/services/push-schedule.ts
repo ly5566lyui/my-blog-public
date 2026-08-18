@@ -3,8 +3,31 @@ import { getAuthToken } from '@/lib/auth'
 import { GITHUB_CONFIG } from '@/consts'
 import { toast } from 'sonner'
 
+export interface SubTask {
+id: string
+title: string
+description: string
+done: boolean
+}
+
+export interface CustomField {
+id: string
+key: string
+value: string
+}
+
+export interface ScheduleItem {
+id: string
+date: string
+title: string
+description: string
+done: boolean
+subTasks: SubTask[]
+fields: CustomField[]
+}
+
 export type PushScheduleParams = {
-schedule: Array<{ date: string; content: string; done: boolean }>
+schedule: ScheduleItem[]
 }
 
 export async function pushSchedule(params: PushScheduleParams): Promise<void> {
