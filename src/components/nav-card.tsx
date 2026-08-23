@@ -127,7 +127,7 @@ export default function NavCard() {
 
 	if (show)
 		return (
-			<HomeDraggableLayer cardKey='navCard' x={position.x} y={position.y} width={styles.width} height={styles.height}>
+			<HomeDraggableLayer cardKey='navCard' x={position.x} y={position.y} width={size.width} height={size.height}>
 				<Card
 					order={styles.order}
 					width={size.width}
