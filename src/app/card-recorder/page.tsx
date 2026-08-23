@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { DialogModal } from '@/components/dialog-modal'
+import { useAuthStore } from '@/hooks/use-auth'
 
 const STORE_KEY = 'card_recorder_v1'
 
@@ -56,10 +57,13 @@ const fieldCls =
 
 export default function CardRecorderPage() {
   const [loaded, setLoaded] = useState(false)
+  const { isAuth, setPrivateKey } = useAuthStore()
   const [cards, setCards] = useState<MainCard[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [modal, setModal] = useState<ModalState>(null)
   const importRef = useRef<HTMLInputElement>(null)
+  const keyInputRef = useRef<HTMLInputElement>(null)
+  const pendingActionRef = useRef<(() => void) | null>(null)
 
   // 弹窗草稿
   const [title, setTitle] = useState('')
@@ -195,10 +199,37 @@ export default function CardRecorderPage() {
     e.target.value = ''
   }
 
+  /* ---------- 鉴权：写操作需先导入密钥 ---------- */
+  const requireAuth = (action: () => void) => {
+    if (!isAuth) {
+      pendingActionRef.current = action
+      keyInputRef.current?.click()
+      return
+    }
+    action()
+  }
+
+  const handlePrivateKeyChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      const text = await file.text()
+      await setPrivateKey(text)
+      toast.success('密钥导入成功')
+      const action = pendingActionRef.current
+      pendingActionRef.current = null
+      if (action) action()
+    } catch {
+      toast.error('读取密钥文件失败')
+    }
+    e.target.value = ''
+  }
+
   /* ---------- 渲染 ---------- */
   return (
     <div className='mx-auto max-w-4xl px-6 py-16'>
       <input ref={importRef} type='file' accept='application/json' className='hidden' onChange={handleImportFile} />
+      <input ref={keyInputRef} type='file' accept='.pem' className='hidden' onChange={handlePrivateKeyChange} />
 
       {/* 头部 */}
       <div className='mb-8 flex flex-wrap items-center justify-between gap-3'>
@@ -213,7 +244,7 @@ export default function CardRecorderPage() {
         </div>
         {!activeCard && (
           <div className='flex flex-wrap items-center gap-2'>
-            <button onClick={() => importRef.current?.click()} className={ghostBtn}>
+            <button onClick={() => requireAuth(() => importRef.current?.click())} className={ghostBtn}>
               <Upload className='h-4 w-4' />
               导入
             </button>
@@ -221,7 +252,7 @@ export default function CardRecorderPage() {
               <Download className='h-4 w-4' />
               导出
             </button>
-            <button onClick={() => openMainModal()} className='brand-btn flex items-center gap-1.5 px-4'>
+            <button onClick={() => requireAuth(() => openMainModal())} className='brand-btn flex items-center gap-1.5 px-4'>
               <Plus className='h-4 w-4' />
               新建主卡片
             </button>
@@ -253,16 +284,16 @@ export default function CardRecorderPage() {
               {activeCard.summary || '（无概要）'}
             </p>
             <div className='mt-4 flex flex-wrap gap-2'>
-              <button onClick={() => openMainModal(activeCard)} className={`${ghostBtn} !px-3 !py-1.5`}>
+              <button onClick={() => requireAuth(() => openMainModal(activeCard))} className={`${ghostBtn} !px-3 !py-1.5`}>
                 <Pencil className='h-3.5 w-3.5' />
                 编辑主卡
               </button>
-              <button onClick={() => openSubModal(activeCard)} className={`${ghostBtn} !px-3 !py-1.5`}>
+              <button onClick={() => requireAuth(() => openSubModal(activeCard))} className={`${ghostBtn} !px-3 !py-1.5`}>
                 <Plus className='h-3.5 w-3.5' />
                 添加子卡片
               </button>
               <button
-                onClick={() => delCard(activeCard)}
+                onClick={() => requireAuth(() => delCard(activeCard))}
                 className='flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50/60 px-3 py-1.5 text-sm text-red-500 backdrop-blur-sm transition-colors hover:bg-red-100'
               >
                 <Trash2 className='h-3.5 w-3.5' />
@@ -276,7 +307,7 @@ export default function CardRecorderPage() {
             <h3 className='text-secondary text-xs font-bold tracking-widest uppercase'>
               子卡片记录 · {(activeCard.children || []).length}
             </h3>
-            <button onClick={() => openSubModal(activeCard)} className='brand-btn flex items-center gap-1.5 px-3 py-1.5 text-sm'>
+            <button onClick={() => requireAuth(() => openSubModal(activeCard))} className='brand-btn flex items-center gap-1.5 px-3 py-1.5 text-sm'>
               <Plus className='h-3.5 w-3.5' />
               添加子卡片
             </button>
@@ -311,13 +342,13 @@ export default function CardRecorderPage() {
                   {!sub.text && !sub.time && !sub.note && <p className='text-secondary text-sm'>（空记录）</p>}
                   <div className='mt-3 flex justify-end gap-1 border-t border-dashed pt-3'>
                     <button
-                      onClick={() => openSubModal(activeCard, sub)}
+                      onClick={() => requireAuth(() => openSubModal(activeCard, sub))}
                       className='rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-brand/10 hover:text-brand'
                     >
                       <Pencil className='h-4 w-4' />
                     </button>
                     <button
-                      onClick={() => delSub(activeCard, sub.id)}
+                      onClick={() => requireAuth(() => delSub(activeCard, sub.id))}
                       className='rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500'
                     >
                       <Trash2 className='h-4 w-4' />
@@ -349,7 +380,7 @@ export default function CardRecorderPage() {
                 <button
                   onClick={e => {
                     e.stopPropagation()
-                    openMainModal(card)
+                    requireAuth(() => openMainModal(card))
                   }}
                   className='rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-brand/10 hover:text-brand'
                 >
@@ -358,7 +389,7 @@ export default function CardRecorderPage() {
                 <button
                   onClick={e => {
                     e.stopPropagation()
-                    delCard(card)
+                    requireAuth(() => delCard(card))
                   }}
                   className='rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500'
                 >
