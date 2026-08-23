@@ -123,9 +123,11 @@ export default function CardRecorderPage() {
   const delCard = (card: MainCard) => {
     const count = card.children?.length || 0
     if (!confirm(`确定删除主卡片「${card.title || '未命名'}」及其 ${count} 条子卡片？`)) return
-    persist(cards.filter(c => c.id !== card.id))
-    if (activeId === card.id) setActiveId(null)
-    toast.success('已删除主卡片')
+    requireAuth(() => {
+      persist(cards.filter(c => c.id !== card.id))
+      if (activeId === card.id) setActiveId(null)
+      toast.success('已删除主卡片')
+    })
   }
 
   /* ---------- 子卡片 ---------- */
@@ -168,10 +170,12 @@ export default function CardRecorderPage() {
 
   const delSub = (card: MainCard, subId: string) => {
     if (!confirm('确定删除这条子卡片？')) return
-    persist(
-      cards.map(c => (c.id === card.id ? { ...c, updatedAt: Date.now(), children: (c.children || []).filter(s => s.id !== subId) } : c))
-    )
-    toast.success('已删除子卡片')
+    requireAuth(() => {
+      persist(
+        cards.map(c => (c.id === card.id ? { ...c, updatedAt: Date.now(), children: (c.children || []).filter(s => s.id !== subId) } : c))
+      )
+      toast.success('已删除子卡片')
+    })
   }
 
   /* ---------- 导入 / 导出 ---------- */
@@ -252,7 +256,7 @@ export default function CardRecorderPage() {
               <Download className='h-4 w-4' />
               导出
             </button>
-            <button onClick={() => requireAuth(() => openMainModal())} className='brand-btn flex items-center gap-1.5 px-4'>
+            <button onClick={() => openMainModal()} className='brand-btn flex items-center gap-1.5 px-4'>
               <Plus className='h-4 w-4' />
               新建主卡片
             </button>
@@ -284,16 +288,16 @@ export default function CardRecorderPage() {
               {activeCard.summary || '（无概要）'}
             </p>
             <div className='mt-4 flex flex-wrap gap-2'>
-              <button onClick={() => requireAuth(() => openMainModal(activeCard))} className={`${ghostBtn} !px-3 !py-1.5`}>
+              <button onClick={() => openMainModal(activeCard)} className={`${ghostBtn} !px-3 !py-1.5`}>
                 <Pencil className='h-3.5 w-3.5' />
                 编辑主卡
               </button>
-              <button onClick={() => requireAuth(() => openSubModal(activeCard))} className={`${ghostBtn} !px-3 !py-1.5`}>
+              <button onClick={() => openSubModal(activeCard)} className={`${ghostBtn} !px-3 !py-1.5`}>
                 <Plus className='h-3.5 w-3.5' />
                 添加子卡片
               </button>
               <button
-                onClick={() => requireAuth(() => delCard(activeCard))}
+                onClick={() => delCard(activeCard)}
                 className='flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50/60 px-3 py-1.5 text-sm text-red-500 backdrop-blur-sm transition-colors hover:bg-red-100'
               >
                 <Trash2 className='h-3.5 w-3.5' />
@@ -307,7 +311,7 @@ export default function CardRecorderPage() {
             <h3 className='text-secondary text-xs font-bold tracking-widest uppercase'>
               子卡片记录 · {(activeCard.children || []).length}
             </h3>
-            <button onClick={() => requireAuth(() => openSubModal(activeCard))} className='brand-btn flex items-center gap-1.5 px-3 py-1.5 text-sm'>
+            <button onClick={() => openSubModal(activeCard)} className='brand-btn flex items-center gap-1.5 px-3 py-1.5 text-sm'>
               <Plus className='h-3.5 w-3.5' />
               添加子卡片
             </button>
@@ -342,13 +346,13 @@ export default function CardRecorderPage() {
                   {!sub.text && !sub.time && !sub.note && <p className='text-secondary text-sm'>（空记录）</p>}
                   <div className='mt-3 flex justify-end gap-1 border-t border-dashed pt-3'>
                     <button
-                      onClick={() => requireAuth(() => openSubModal(activeCard, sub))}
+                      onClick={() => openSubModal(activeCard, sub)}
                       className='rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-brand/10 hover:text-brand'
                     >
                       <Pencil className='h-4 w-4' />
                     </button>
                     <button
-                      onClick={() => requireAuth(() => delSub(activeCard, sub.id))}
+                      onClick={() => delSub(activeCard, sub.id)}
                       className='rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500'
                     >
                       <Trash2 className='h-4 w-4' />
@@ -380,7 +384,7 @@ export default function CardRecorderPage() {
                 <button
                   onClick={e => {
                     e.stopPropagation()
-                    requireAuth(() => openMainModal(card))
+                    openMainModal(card)
                   }}
                   className='rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-brand/10 hover:text-brand'
                 >
@@ -389,7 +393,7 @@ export default function CardRecorderPage() {
                 <button
                   onClick={e => {
                     e.stopPropagation()
-                    requireAuth(() => delCard(card))
+                    delCard(card)
                   }}
                   className='rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500'
                 >
@@ -436,7 +440,7 @@ export default function CardRecorderPage() {
               <button onClick={() => setModal(null)} className='rounded-xl border bg-white px-4 py-2 text-sm transition-colors hover:bg-gray-50'>
                 取消
               </button>
-              <button onClick={submitMain} className='brand-btn px-5'>
+              <button onClick={() => requireAuth(submitMain)} className='brand-btn px-5'>
                 {modal.card ? '保存' : '创建'}
               </button>
             </div>
@@ -468,7 +472,7 @@ export default function CardRecorderPage() {
               <button onClick={() => setModal(null)} className='rounded-xl border bg-white px-4 py-2 text-sm transition-colors hover:bg-gray-50'>
                 取消
               </button>
-              <button onClick={submitSub} className='brand-btn px-5'>
+              <button onClick={() => requireAuth(submitSub)} className='brand-btn px-5'>
                 {modal.sub ? '保存' : '添加'}
               </button>
             </div>
@@ -478,3 +482,4 @@ export default function CardRecorderPage() {
     </div>
   )
 }
+
