@@ -110,7 +110,7 @@ export default function NavCard() {
 
 	const size = useMemo(() => {
 		if (form === 'mini') return { width: 64, height: 64 }
-		else if (form === 'icons') { const perRow = 6; const rows = Math.ceil(list.length / perRow); const cols = Math.min(list.length, perRow); return { width: cols * (itemHeight + 24) + 24, height: rows * (itemHeight + 24) + 24 } }
+		else if (form === 'icons') { const count = list.length + 1; return { width: count * (itemHeight + 24) + 24, height: itemHeight + 24 + 24 } }
 		else {
 			// full mode: 动态高度 = 头像区(60) + General(20) + mt-6(24) + mt-2(8) + 列表 + padding(24)
 			const h = 136 + list.length * 52
@@ -138,7 +138,7 @@ export default function NavCard() {
 					height={size.height}
 					x={position.x}
 					y={position.y}
-					className={clsx('overflow-hidden', form === 'mini' && 'p-3', form === 'icons' && 'flex flex-wrap items-center gap-6 p-3')}>
+					className={clsx('overflow-hidden', form === 'mini' && 'p-3', form === 'icons' && 'flex items-center gap-6 p-3')}>
 					{form === 'full' && siteContent.enableChristmas && (
 						<>
 							<img
@@ -162,7 +162,7 @@ export default function NavCard() {
 						<>
 							{form !== 'icons' && <div className='text-secondary mt-6 text-sm uppercase'>General</div>}
 
-							<div className={cn('relative mt-2 space-y-2', form === 'icons' && 'mt-0 flex flex-wrap items-center gap-6 space-y-0')}>
+							<div className={cn('relative mt-2 space-y-2', form === 'icons' && 'mt-0 flex items-center gap-6 space-y-0')}>
 						{form === 'icons' && (
 							<Link className='flex items-center' href='/'>
 								<Image src='/images/avatar.png' alt='avatar' width={28} height={28} style={{ boxShadow: ' 0 8px 16px -4px #E2D9CE' }} className='rounded-full' />
@@ -175,7 +175,7 @@ export default function NavCard() {
 									animate={
 										form === 'icons'
 											? {
-													left: hoveredIndex * (itemHeight + 24) - extraSize,
+													left: (hoveredIndex + 1) * (itemHeight + 24) - extraSize,
 													top: -extraSize,
 													width: itemHeight + extraSize * 2,
 													height: itemHeight + extraSize * 2
