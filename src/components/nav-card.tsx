@@ -128,8 +128,8 @@ export default function NavCard() {
 		if (form === 'mini') return { width: 64, height: 64 }
 		else if (form === 'icons') { const count = list.length + 1; return { width: count * (itemHeight + 24) + 24, height: itemHeight + 24 + 24 } }
 		else {
-			// full mode: 动态高度 = 头像区(60) + General(20) + mt-6(24) + mt-2(8) + 列表 + padding(24)
-			const h = 136 + list.length * 52
+			// full mode: 动态高度，最多 440px，超出后列表内部滚动
+			const h = Math.min(136 + list.length * 52, 440)
 			return { width: styles.width, height: h }
 		}
 	}, [form, styles])
@@ -178,7 +178,13 @@ export default function NavCard() {
 						<>
 							{form !== 'icons' && <div className='text-secondary mt-6 text-sm uppercase'>General</div>}
 
-							<div className={cn('relative mt-2 space-y-2', form === 'icons' && 'mt-0 flex items-center gap-6 space-y-0')}>
+							<div
+							className={cn(
+								'relative mt-2 space-y-2',
+								form === 'full' && 'overflow-y-auto pr-1 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-200',
+								form === 'icons' && 'mt-0 flex items-center gap-6 space-y-0'
+							)}
+							style={form === 'full' ? { maxHeight: size.height - 120 } : undefined}>
 						{form === 'icons' && (
 							<Link className='flex items-center' href='/'>
 								<Image src='/images/avatar.png' alt='avatar' width={28} height={28} style={{ boxShadow: ' 0 8px 16px -4px #E2D9CE' }} className='rounded-full' />
