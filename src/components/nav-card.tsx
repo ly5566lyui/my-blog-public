@@ -110,14 +110,7 @@ export default function NavCard() {
 
 	const size = useMemo(() => {
 		if (form === 'mini') return { width: 64, height: 64 }
-				else if (form === 'icons') {
-			// 每行最多 6 个，超出自动换行
-			const perRow = 6
-			const rows = Math.ceil(list.length / perRow)
-			const cols = Math.min(list.length, perRow)
-			const w = cols * (itemHeight + 24) + 24
-			const h = rows * (itemHeight + 24) + 24
-			return { width: w, height: h }
+		else if (form === 'icons') { const perRow = 6; const rows = Math.ceil(list.length / perRow); const cols = Math.min(list.length, perRow); return { width: cols * (itemHeight + 24) + 24, height: rows * (itemHeight + 24) + 24 } }
 		else return { width: styles.width, height: styles.height }
 	}, [form, styles])
 
