@@ -216,8 +216,10 @@ export default function CardRecorderPage() {
         persist(Array.from(map.values()))
         toast.success(`导入成功：新增 ${incoming.length} 张主卡（共 ${map.size} 张）`)
       }
-    } catch {
-      toast.error('文件格式不正确')
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error)
+      console.error('卡片导入失败:', error)
+      toast.error(`导入失败：${msg}`)
     }
     e.target.value = ''
   }
@@ -562,6 +564,7 @@ export default function CardRecorderPage() {
     </div>
   )
 }
+
 
 
 
