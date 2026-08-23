@@ -16,6 +16,7 @@ import {
 import { toast } from 'sonner'
 import { DialogModal } from '@/components/dialog-modal'
 import { useAuthStore } from '@/hooks/use-auth'
+import { readFileAsText } from '@/lib/file-utils'
 
 const STORE_KEY = 'card_recorder_v1'
 
@@ -194,7 +195,7 @@ export default function CardRecorderPage() {
     const file = e.target.files?.[0]
     if (!file) return
     try {
-      const data = JSON.parse(await file.text())
+      const data = JSON.parse(await readFileAsText(file))
       if (!Array.isArray(data?.cards)) throw new Error('bad format')
       if (activeCard) {
         // 详情视图：把导入文件里的所有子卡合并进当前主卡（按 id 去重）
@@ -235,7 +236,7 @@ export default function CardRecorderPage() {
     const file = e.target.files?.[0]
     if (!file) return
     try {
-      const text = await file.text()
+      const text = await readFileAsText(file)
       await setPrivateKey(text)
       toast.success('密钥导入成功')
       const action = pendingActionRef.current
@@ -561,6 +562,7 @@ export default function CardRecorderPage() {
     </div>
   )
 }
+
 
 
 
