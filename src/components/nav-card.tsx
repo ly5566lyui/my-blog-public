@@ -150,17 +150,24 @@ export default function NavCard() {
 						</>
 					)}
 
-					<Link className='flex items-center gap-3' href='/'>
-						<Image src='/images/avatar.png' alt='avatar' width={40} height={40} style={{ boxShadow: ' 0 12px 20px -5px #E2D9CE' }} className='rounded-full' />
-						{form === 'full' && <span className='font-averia mt-1 text-2xl leading-none font-medium'>{siteContent.meta.title}</span>}
-						{form === 'full' && <span className='text-brand mt-2 text-xs font-medium'>(开发中)</span>}
-					</Link>
+					{form !== 'icons' && (
+						<Link className='flex items-center gap-3' href='/'>
+							<Image src='/images/avatar.png' alt='avatar' width={40} height={40} style={{ boxShadow: ' 0 12px 20px -5px #E2D9CE' }} className='rounded-full' />
+							{form === 'full' && <span className='font-averia mt-1 text-2xl leading-none font-medium'>{siteContent.meta.title}</span>}
+							{form === 'full' && <span className='text-brand mt-2 text-xs font-medium'>(开发中)</span>}
+						</Link>
+					)}
 
 					{(form === 'full' || form === 'icons') && (
 						<>
 							{form !== 'icons' && <div className='text-secondary mt-6 text-sm uppercase'>General</div>}
 
 							<div className={cn('relative mt-2 space-y-2', form === 'icons' && 'mt-0 flex flex-wrap items-center gap-6 space-y-0')}>
+						{form === 'icons' && (
+							<Link className='flex items-center' href='/'>
+								<Image src='/images/avatar.png' alt='avatar' width={28} height={28} style={{ boxShadow: ' 0 8px 16px -4px #E2D9CE' }} className='rounded-full' />
+							</Link>
+						)}
 								<motion.div
 									className='absolute max-w-[230px] rounded-full border'
 									layoutId='nav-hover'
