@@ -19,6 +19,8 @@ import WebsiteFilledSVG from '@/svgs/website-filled.svg'
 import WebsiteOutlineSVG from '@/svgs/website-outline.svg'
 import ScheduleOutlineSVG from '@/svgs/schedule-outline.svg'
 import ScheduleFilledSVG from '@/svgs/schedule-filled.svg'
+import TimelineOutlineSVG from '@/svgs/timeline-outline.svg'
+import TimelineFilledSVG from '@/svgs/timeline-filled.svg'
 import { usePathname } from 'next/navigation'
 import clsx from 'clsx'
 import { cn } from '@/lib/utils'
@@ -62,6 +64,12 @@ const list = [
 		iconActive: WebsiteFilledSVG,
 		label: '优秀博客',
 		href: '/bloggers'
+	},
+	{
+		icon: TimelineOutlineSVG,
+		iconActive: TimelineFilledSVG,
+		label: '时间轴',
+		href: '/schedule/timeline'
 	}
 ]
 

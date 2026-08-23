@@ -259,6 +259,7 @@ export default function Page() {
   const [draft, setDraft] = useState<ScheduleItem | null>(null)
   const [viewMonth, setViewMonth] = useState(() => dayjs().format('YYYY-MM'))
   const [selectedDate, setSelectedDate] = useState(() => dayjs().format('YYYY-MM-DD'))
+  const [pendingEdit, setPendingEdit] = useState(false)
   const keyInputRef = useRef<HTMLInputElement>(null)
   const { isAuth, setPrivateKey } = useAuthStore()
   const { siteContent } = useConfigStore()
@@ -268,12 +269,17 @@ export default function Page() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isEditMode && (e.ctrlKey || e.metaKey) && e.key === ',') {
         e.preventDefault()
-        setIsEditMode(true)
+        if (!isAuth) {
+          setPendingEdit(true)
+          keyInputRef.current?.click()
+        } else {
+          setIsEditMode(true)
+        }
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isEditMode])
+  }, [isEditMode, isAuth])
 
   // 初始化：优先读取 localStorage 缓存，实现与时间轴页数据联动
   useEffect(() => {
@@ -328,7 +334,12 @@ export default function Page() {
     try {
       const text = await file.text()
       await setPrivateKey(text)
-      await handleSave()
+      if (pendingEdit) {
+        setPendingEdit(false)
+        setIsEditMode(true)
+      } else {
+        await handleSave()
+      }
     } catch (error) {
       console.error('Failed to read private key:', error)
       toast.error('读取密钥文件失败')
@@ -650,7 +661,14 @@ export default function Page() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setIsEditMode(true)}
+              onClick={() => {
+                if (!isAuth) {
+                  setPendingEdit(true)
+                  keyInputRef.current?.click()
+                } else {
+                  setIsEditMode(true)
+                }
+              }}
               className='bg-card rounded-xl border px-6 py-2 text-sm backdrop-blur-sm transition-colors hover:bg-white/80'
             >
               编辑
