@@ -203,7 +203,7 @@ export default function CardRecorderPage() {
         if (incoming.length === 0) throw new Error('该文件没有子卡片')
         const subMap = new Map<string, SubCard>()
         ;(activeCard.children || []).forEach(s => subMap.set(s.id, s))
-        incoming.forEach(s => subMap.set(s.id, s))
+        incoming.forEach(s => subMap.set(s.id || uid(), s))
         const merged = Array.from(subMap.values())
         persist(cards.map(c => (c.id === activeCard.id ? { ...c, children: merged, updatedAt: Date.now() } : c)))
         toast.success(`已导入 ${incoming.length} 条子卡到「${activeCard.title}」（共 ${merged.length} 条）`)
@@ -212,7 +212,7 @@ export default function CardRecorderPage() {
         const incoming = data.cards as MainCard[]
         const map = new Map<string, MainCard>()
         cards.forEach(c => map.set(c.id, c))
-        incoming.forEach(c => map.set(c.id, c))
+        incoming.forEach(c => map.set(c.id || uid(), { ...c, children: (c.children || []).map(s => ({ ...s, id: s.id || uid() })) }))
         persist(Array.from(map.values()))
         toast.success(`导入成功：新增 ${incoming.length} 张主卡（共 ${map.size} 张）`)
       }
