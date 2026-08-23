@@ -111,7 +111,11 @@ export default function NavCard() {
 	const size = useMemo(() => {
 		if (form === 'mini') return { width: 64, height: 64 }
 		else if (form === 'icons') { const perRow = 6; const rows = Math.ceil(list.length / perRow); const cols = Math.min(list.length, perRow); return { width: cols * (itemHeight + 24) + 24, height: rows * (itemHeight + 24) + 24 } }
-		else return { width: styles.width, height: styles.height }
+		else {
+			// full mode: 动态高度 = 头像区(60) + General(20) + mt-6(24) + mt-2(8) + 列表 + padding(24)
+			const h = 136 + list.length * 52
+			return { width: styles.width, height: h }
+		}
 	}, [form, styles])
 
 	useEffect(() => {
@@ -134,7 +138,7 @@ export default function NavCard() {
 					height={size.height}
 					x={position.x}
 					y={position.y}
-					className={clsx(form === 'mini' && 'overflow-hidden', form === 'mini' && 'p-3', form === 'icons' && 'flex flex-wrap items-center gap-6 p-3')}>
+					className={clsx('overflow-hidden', form === 'mini' && 'p-3', form === 'icons' && 'flex flex-wrap items-center gap-6 p-3')}>
 					{form === 'full' && siteContent.enableChristmas && (
 						<>
 							<img
