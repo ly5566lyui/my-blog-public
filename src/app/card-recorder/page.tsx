@@ -196,13 +196,25 @@ export default function CardRecorderPage() {
     try {
       const data = JSON.parse(await file.text())
       if (!Array.isArray(data?.cards)) throw new Error('bad format')
-      // 合并模式：按 id 去重，同 id 覆盖（导入优先），新 id 追加，保留本地已有卡片
-      const incoming = data.cards as MainCard[]
-      const map = new Map<string, MainCard>()
-      cards.forEach(c => map.set(c.id, c))
-      incoming.forEach(c => map.set(c.id, c))
-      persist(Array.from(map.values()))
-      toast.success(`导入成功：新增 ${incoming.length} 张（共 ${map.size} 张）`)
+      if (activeCard) {
+        // 详情视图：把导入文件里的所有子卡合并进当前主卡（按 id 去重）
+        const incoming = (data.cards as MainCard[]).flatMap(c => c.children || [])
+        if (incoming.length === 0) throw new Error('该文件没有子卡片')
+        const subMap = new Map<string, SubCard>()
+        ;(activeCard.children || []).forEach(s => subMap.set(s.id, s))
+        incoming.forEach(s => subMap.set(s.id, s))
+        const merged = Array.from(subMap.values())
+        persist(cards.map(c => (c.id === activeCard.id ? { ...c, children: merged, updatedAt: Date.now() } : c)))
+        toast.success(`已导入 ${incoming.length} 条子卡到「${activeCard.title}」（共 ${merged.length} 条）`)
+      } else {
+        // 列表视图：合并主卡片（按 id 去重，同 id 覆盖，新增追加）
+        const incoming = data.cards as MainCard[]
+        const map = new Map<string, MainCard>()
+        cards.forEach(c => map.set(c.id, c))
+        incoming.forEach(c => map.set(c.id, c))
+        persist(Array.from(map.values()))
+        toast.success(`导入成功：新增 ${incoming.length} 张主卡（共 ${map.size} 张）`)
+      }
     } catch {
       toast.error('文件格式不正确')
     }
@@ -301,6 +313,10 @@ export default function CardRecorderPage() {
               <button onClick={() => openSubModal(activeCard)} className={`${ghostBtn} !px-3 !py-1.5`}>
                 <Plus className='h-3.5 w-3.5' />
                 添加子卡片
+              </button>
+              <button onClick={() => requireAuth(() => importRef.current?.click())} className={`${ghostBtn} !px-3 !py-1.5`}>
+                <Upload className='h-3.5 w-3.5' />
+                导入子卡
               </button>
               <button
                 onClick={() => delCard(activeCard)}
@@ -496,36 +512,34 @@ export default function CardRecorderPage() {
         )}
       </DialogModal>
 
-      {/* 子卡片只读详情弹窗 */}
-      <DialogModal open={modal?.type === 'view-sub'} onClose={() => setModal(null)} className='card static w-[520px] max-sm:w-full'>
+      {/* 子卡片阅读模式弹窗（像看书一样自然） */}
+      <DialogModal open={modal?.type === 'view-sub'} onClose={() => setModal(null)} className='card static w-[580px] max-w-[94vw] max-sm:w-full'>
         {modal?.type === 'view-sub' && (
           <div>
-            <h3 className='mb-4 flex items-center gap-2 text-lg font-bold'>
-              <FileText className='text-brand h-5 w-5' />
-              子卡片详情
-            </h3>
-            {modal.sub.text && (
-              <div className='mb-4'>
-                <label className='text-secondary mb-1.5 block text-xs font-semibold'>文本</label>
-                <p className='rounded-xl border bg-white/70 p-3 text-sm leading-relaxed whitespace-pre-wrap break-words'>{modal.sub.text}</p>
-              </div>
-            )}
-            {modal.sub.time && (
-              <div className='mb-4'>
-                <label className='text-secondary mb-1.5 block text-xs font-semibold'>时间</label>
-                <p className='rounded-xl border bg-white/70 p-3 text-sm'>{fmtTime(modal.sub.time)}</p>
-              </div>
-            )}
-            {modal.sub.note && (
-              <div className='mb-4'>
-                <label className='text-secondary mb-1.5 block text-xs font-semibold'>备注</label>
-                <p className='rounded-xl border bg-white/70 p-3 text-sm leading-relaxed whitespace-pre-wrap break-words'>{modal.sub.note}</p>
-              </div>
-            )}
-            {!modal.sub.text && !modal.sub.time && !modal.sub.note && (
-              <p className='text-secondary mb-4 text-sm'>（空记录）</p>
-            )}
-            <div className='flex justify-end gap-2.5'>
+            <div className='max-h-[68vh] overflow-y-auto pr-1 pt-1 pb-2'>
+              {/* 标题：有正文时 text 作标题 */}
+              {modal.sub.text && modal.sub.note && (
+                <h3 className='mb-3 text-[22px] leading-snug font-bold text-gray-900 break-words'>{modal.sub.text}</h3>
+              )}
+              {/* 元信息行 */}
+              {(modal.sub.time || modal.card.title) && (
+                <div className='text-secondary mb-5 flex items-center gap-2 border-b border-dashed pb-4 text-xs'>
+                  {modal.sub.time && (
+                    <>
+                      <Clock3 className='h-3.5 w-3.5 shrink-0' />
+                      <span>{fmtTime(modal.sub.time)}</span>
+                    </>
+                  )}
+                  {modal.sub.time && modal.card.title && <span className='text-gray-300'>·</span>}
+                  {modal.card.title && <span className='truncate'>{modal.card.title}</span>}
+                </div>
+              )}
+              {/* 正文 */}
+              <p className='text-[15px] leading-[2] whitespace-pre-wrap break-words text-gray-700'>
+                {modal.sub.note || modal.sub.text || '（空记录）'}
+              </p>
+            </div>
+            <div className='mt-4 flex justify-end gap-2.5 border-t border-gray-100 pt-4'>
               <button
                 onClick={() => {
                   const c = modal.card
@@ -547,5 +561,6 @@ export default function CardRecorderPage() {
     </div>
   )
 }
+
 
 
