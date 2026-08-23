@@ -38,6 +38,7 @@ interface MainCard {
 type ModalState =
   | { type: 'main-card'; card?: MainCard }
   | { type: 'sub-card'; card: MainCard; sub?: SubCard }
+  | { type: 'view-sub'; card: MainCard; sub: SubCard }
   | null
 
 const uid = () => 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
@@ -195,8 +196,13 @@ export default function CardRecorderPage() {
     try {
       const data = JSON.parse(await file.text())
       if (!Array.isArray(data?.cards)) throw new Error('bad format')
-      persist(data.cards as MainCard[])
-      toast.success('导入成功')
+      // 合并模式：按 id 去重，同 id 覆盖（导入优先），新 id 追加，保留本地已有卡片
+      const incoming = data.cards as MainCard[]
+      const map = new Map<string, MainCard>()
+      cards.forEach(c => map.set(c.id, c))
+      incoming.forEach(c => map.set(c.id, c))
+      persist(Array.from(map.values()))
+      toast.success(`导入成功：新增 ${incoming.length} 张（共 ${map.size} 张）`)
     } catch {
       toast.error('文件格式不正确')
     }
@@ -324,7 +330,11 @@ export default function CardRecorderPage() {
           ) : (
             <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'>
               {(activeCard.children || []).map(sub => (
-                <div key={sub.id} className='rounded-2xl border bg-white/70 p-4 shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:shadow-md'>
+                <div
+                  key={sub.id}
+                  onClick={() => setModal({ type: 'view-sub', card: activeCard, sub })}
+                  className='cursor-pointer rounded-2xl border bg-white/70 p-4 shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:shadow-md'
+                >
                   {sub.text && (
                     <div className='mb-2 flex items-start gap-2 text-sm leading-relaxed'>
                       <FileText className='text-brand mt-0.5 h-4 w-4 shrink-0' />
@@ -346,13 +356,19 @@ export default function CardRecorderPage() {
                   {!sub.text && !sub.time && !sub.note && <p className='text-secondary text-sm'>（空记录）</p>}
                   <div className='mt-3 flex justify-end gap-1 border-t border-dashed pt-3'>
                     <button
-                      onClick={() => openSubModal(activeCard, sub)}
+                      onClick={e => {
+                        e.stopPropagation()
+                        openSubModal(activeCard, sub)
+                      }}
                       className='rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-brand/10 hover:text-brand'
                     >
                       <Pencil className='h-4 w-4' />
                     </button>
                     <button
-                      onClick={() => delSub(activeCard, sub.id)}
+                      onClick={e => {
+                        e.stopPropagation()
+                        delSub(activeCard, sub.id)
+                      }}
                       className='rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500'
                     >
                       <Trash2 className='h-4 w-4' />
@@ -479,7 +495,57 @@ export default function CardRecorderPage() {
           </div>
         )}
       </DialogModal>
+
+      {/* 子卡片只读详情弹窗 */}
+      <DialogModal open={modal?.type === 'view-sub'} onClose={() => setModal(null)} className='card static w-[520px] max-sm:w-full'>
+        {modal?.type === 'view-sub' && (
+          <div>
+            <h3 className='mb-4 flex items-center gap-2 text-lg font-bold'>
+              <FileText className='text-brand h-5 w-5' />
+              子卡片详情
+            </h3>
+            {modal.sub.text && (
+              <div className='mb-4'>
+                <label className='text-secondary mb-1.5 block text-xs font-semibold'>文本</label>
+                <p className='rounded-xl border bg-white/70 p-3 text-sm leading-relaxed whitespace-pre-wrap break-words'>{modal.sub.text}</p>
+              </div>
+            )}
+            {modal.sub.time && (
+              <div className='mb-4'>
+                <label className='text-secondary mb-1.5 block text-xs font-semibold'>时间</label>
+                <p className='rounded-xl border bg-white/70 p-3 text-sm'>{fmtTime(modal.sub.time)}</p>
+              </div>
+            )}
+            {modal.sub.note && (
+              <div className='mb-4'>
+                <label className='text-secondary mb-1.5 block text-xs font-semibold'>备注</label>
+                <p className='rounded-xl border bg-white/70 p-3 text-sm leading-relaxed whitespace-pre-wrap break-words'>{modal.sub.note}</p>
+              </div>
+            )}
+            {!modal.sub.text && !modal.sub.time && !modal.sub.note && (
+              <p className='text-secondary mb-4 text-sm'>（空记录）</p>
+            )}
+            <div className='flex justify-end gap-2.5'>
+              <button
+                onClick={() => {
+                  const c = modal.card
+                  const s = modal.sub
+                  setModal(null)
+                  openSubModal(c, s)
+                }}
+                className='rounded-xl border bg-white px-4 py-2 text-sm transition-colors hover:bg-gray-50'
+              >
+                编辑
+              </button>
+              <button onClick={() => setModal(null)} className='brand-btn px-5'>
+                关闭
+              </button>
+            </div>
+          </div>
+        )}
+      </DialogModal>
     </div>
   )
 }
+
 
