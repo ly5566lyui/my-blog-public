@@ -110,7 +110,14 @@ export default function NavCard() {
 
 	const size = useMemo(() => {
 		if (form === 'mini') return { width: 64, height: 64 }
-		else if (form === 'icons') return { width: 340, height: 64 }
+				else if (form === 'icons') {
+			// 每行最多 6 个，超出自动换行
+			const perRow = 6
+			const rows = Math.ceil(list.length / perRow)
+			const cols = Math.min(list.length, perRow)
+			const w = cols * (itemHeight + 24) + 24
+			const h = rows * (itemHeight + 24) + 24
+			return { width: w, height: h }
 		else return { width: styles.width, height: styles.height }
 	}, [form, styles])
 
@@ -134,7 +141,7 @@ export default function NavCard() {
 					height={size.height}
 					x={position.x}
 					y={position.y}
-					className={clsx(form != 'full' && 'overflow-hidden', form === 'mini' && 'p-3', form === 'icons' && 'flex items-center gap-6 p-3')}>
+					className={clsx(form != 'full' && form !== 'icons' && 'overflow-hidden', form === 'mini' && 'p-3', form === 'icons' && 'flex flex-wrap items-center gap-6 p-3')}>
 					{form === 'full' && siteContent.enableChristmas && (
 						<>
 							<img
@@ -156,7 +163,7 @@ export default function NavCard() {
 						<>
 							{form !== 'icons' && <div className='text-secondary mt-6 text-sm uppercase'>General</div>}
 
-							<div className={cn('relative mt-2 space-y-2', form === 'icons' && 'mt-0 flex items-center gap-6 space-y-0')}>
+							<div className={cn('relative mt-2 space-y-2', form === 'icons' && 'mt-0 flex flex-wrap items-center gap-6 space-y-0')}>
 								<motion.div
 									className='absolute max-w-[230px] rounded-full border'
 									layoutId='nav-hover'
@@ -198,3 +205,4 @@ export default function NavCard() {
 			</HomeDraggableLayer>
 		)
 }
+
