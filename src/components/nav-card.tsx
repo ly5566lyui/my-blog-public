@@ -21,6 +21,8 @@ import ScheduleOutlineSVG from '@/svgs/schedule-outline.svg'
 import ScheduleFilledSVG from '@/svgs/schedule-filled.svg'
 import TimelineOutlineSVG from '@/svgs/timeline-outline.svg'
 import TimelineFilledSVG from '@/svgs/timeline-filled.svg'
+import CardRecordOutlineSVG from '@/svgs/card-record-outline.svg'
+import CardRecordFilledSVG from '@/svgs/card-record-filled.svg'
 import { usePathname } from 'next/navigation'
 import clsx from 'clsx'
 import { cn } from '@/lib/utils'
@@ -70,6 +72,12 @@ const list = [
 		iconActive: TimelineFilledSVG,
 		label: '时间轴',
 		href: '/schedule/timeline'
+	},
+	{
+		icon: CardRecordOutlineSVG,
+		iconActive: CardRecordFilledSVG,
+		label: '卡片记录',
+		href: '/card-recorder'
 	}
 ]
 
