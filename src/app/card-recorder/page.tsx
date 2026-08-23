@@ -354,7 +354,7 @@ export default function CardRecorderPage() {
                   {sub.text && (
                     <div className='mb-2 flex items-start gap-2 text-sm leading-relaxed'>
                       <FileText className='text-brand mt-0.5 h-4 w-4 shrink-0' />
-                      <span className='break-words whitespace-pre-wrap'>{sub.text}</span>
+                      <span className='break-words line-clamp-2 whitespace-pre-wrap'>{sub.text}</span>
                     </div>
                   )}
                   {sub.time && (
@@ -366,7 +366,7 @@ export default function CardRecorderPage() {
                   {sub.note && (
                     <div className='flex items-start gap-2 text-sm text-gray-500 italic'>
                       <MapPin className='text-brand mt-0.5 h-4 w-4 shrink-0' />
-                      <span className='break-words whitespace-pre-wrap'>{sub.note}</span>
+                      <span className='break-words line-clamp-3 whitespace-pre-wrap'>{sub.note}</span>
                     </div>
                   )}
                   {!sub.text && !sub.time && !sub.note && <p className='text-secondary text-sm'>（空记录）</p>}
@@ -561,6 +561,7 @@ export default function CardRecorderPage() {
     </div>
   )
 }
+
 
 
 
