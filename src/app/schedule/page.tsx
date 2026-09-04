@@ -2,12 +2,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'motion/react'
 import { toast } from 'sonner'
-import { Plus, X, Check, Calendar, Trash2, ListChecks, Tags, ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
+import { Plus, X, Check, Calendar, Trash2, ListChecks, Tags, ChevronLeft, ChevronRight, CalendarDays, TrendingUp, Flame } from 'lucide-react'
+import * as LucideIcons from 'lucide-react'
 import { DialogModal } from '@/components/dialog-modal'
 import { useAuthStore } from '@/hooks/use-auth'
 import { useConfigStore } from '@/app/(home)/stores/config-store'
 import initialList from './list.json'
 import { getFestival } from './festivals'
+import { getLunarDayStr, getSolarTerm } from '../utils/lunar'
 import { pushSchedule } from './services/push-schedule'
 import type { ScheduleItem, SubTask, CustomField } from './services/push-schedule'
 import dayjs from 'dayjs'
@@ -35,6 +37,38 @@ const cloneItem = (item: ScheduleItem): ScheduleItem => ({
   subTasks: item.subTasks.map(s => ({ ...s })),
   fields: item.fields.map(f => ({ ...f }))
 })
+
+/** 动态获取 lucide-react 图标组件 */
+function getLucideIcon(name: string) {
+  return (LucideIcons as any)[name] || LucideIcons.Circle
+}
+
+// 统计面板组件
+function StatsPanel({ total, done, streak }: { total: number; done: number; streak: number }) {
+  const rate = total > 0 ? Math.round((done / total) * 100) : 0
+  return (
+    <div className='mb-4 grid grid-cols-3 gap-3'>
+      <div className='card flex flex-col items-center gap-1 p-4'>
+        <div className='text-2xl font-bold text-brand'>{rate}%</div>
+        <div className='flex items-center gap-1 text-xs text-gray-500'>
+          <TrendingUp className='h-3 w-3' />
+          完成率
+        </div>
+      </div>
+      <div className='card flex flex-col items-center gap-1 p-4'>
+        <div className='text-2xl font-bold text-orange-500'>{streak}</div>
+        <div className='flex items-center gap-1 text-xs text-gray-500'>
+          <Flame className='h-3 w-3' />
+          连续天数
+        </div>
+      </div>
+      <div className='card flex flex-col items-center gap-1 p-4'>
+        <div className='text-2xl font-bold text-emerald-500'>{done}<span className='text-sm text-gray-400'>/{total}</span></div>
+        <div className='text-xs text-gray-500'>总进度</div>
+      </div>
+    </div>
+  )
+}
 
 interface CardDetailProps {
   draft: ScheduleItem
@@ -259,10 +293,29 @@ export default function Page() {
   const [draft, setDraft] = useState<ScheduleItem | null>(null)
   const [viewMonth, setViewMonth] = useState(() => dayjs().format('YYYY-MM'))
   const [selectedDate, setSelectedDate] = useState(() => dayjs().format('YYYY-MM-DD'))
+  const [jumpYear, setJumpYear] = useState('')
+  const [jumpMonth, setJumpMonth] = useState('')
+  const [showJump, setShowJump] = useState(false)
+  const [holidays, setHolidays] = useState<Record<string, { name: string; isOffDay: boolean }>>({})
   const keyInputRef = useRef<HTMLInputElement>(null)
   const { isAuth, setPrivateKey } = useAuthStore()
   const { siteContent } = useConfigStore()
   const hideEditButton = siteContent.hideEditButton ?? false
+
+  // 加载法定假日数据
+  useEffect(() => {
+    const loadHolidays = async () => {
+      const year = dayjs(viewMonth).year()
+      try {
+        const res = await fetch(`https://raw.githubusercontent.com/NateScarlet/holiday-cn/master/${year}.json`)
+        if (res.ok) {
+          const data = await res.json()
+          setHolidays(data)
+        }
+      } catch {}
+    }
+    loadHolidays()
+  }, [viewMonth])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -275,7 +328,7 @@ export default function Page() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isEditMode])
 
-  // 初始化：优先读取 localStorage 缓存，实现与时间轴页数据联动
+  // 初始化：优先读取 localStorage 缓存
   useEffect(() => {
     const cached = localStorage.getItem('schedule_cache_v1')
     if (cached) {
@@ -289,7 +342,7 @@ export default function Page() {
     }
   }, [])
 
-  // schedule 变化时自动同步到 localStorage，保证时间轴页随时联动
+  // schedule 变化时自动同步到 localStorage
   useEffect(() => {
     localStorage.setItem('schedule_cache_v1', JSON.stringify(schedule))
   }, [schedule])
@@ -381,10 +434,27 @@ export default function Page() {
   }, [schedule])
 
   const monthStart = dayjs(viewMonth).startOf('month')
-  const firstWeekday = monthStart.day() // 0 = 周日
+  const firstWeekday = monthStart.day()
   const totalCells = Math.ceil((firstWeekday + monthStart.daysInMonth()) / 7) * 7
   const cells = Array.from({ length: totalCells }, (_, i) => monthStart.add(i - firstWeekday, 'day'))
   const todayStr = dayjs().format('YYYY-MM-DD')
+
+  /* ---------- 日历数据 ---------- */
+  const streak = useMemo(() => {
+    let count = 0
+    let checkDate = dayjs()
+    while (true) {
+      const dateStr = checkDate.format('YYYY-MM-DD')
+      const items = byDate.get(dateStr)
+      if (items && items.length > 0 && items.every(i => i.done)) {
+        count++
+        checkDate = checkDate.subtract(1, 'day')
+      } else {
+        break
+      }
+    }
+    return count
+  }, [byDate])
 
   const switchMonth = (diff: number) => {
     const m = diff >= 0 ? monthStart.add(diff, 'month') : monthStart.subtract(-diff, 'month')
@@ -397,6 +467,17 @@ export default function Page() {
   const goToday = () => {
     setViewMonth(dayjs().format('YYYY-MM'))
     setSelectedDate(todayStr)
+  }
+
+  const handleJump = () => {
+    const y = parseInt(jumpYear)
+    const m = parseInt(jumpMonth)
+    if (y >= 2000 && y <= 2100 && m >= 1 && m <= 12) {
+      setViewMonth(`${y}-${m.toString().padStart(2, '0')}`)
+      setShowJump(false)
+      setJumpYear('')
+      setJumpMonth('')
+    }
   }
 
   const buttonText = isAuth ? '保存' : '导入密钥'
@@ -426,7 +507,7 @@ export default function Page() {
             </span>
             <h1 className='text-xl font-semibold leading-tight'>日程计划</h1>
           </div>
-          {/* 月份切换 */}
+          {/* 月份切换 + 跳转 */}
           <div className='flex items-center gap-1.5'>
             <button
               onClick={() => switchMonth(-1)}
@@ -449,10 +530,62 @@ export default function Page() {
             >
               今天
             </button>
+            <button
+              onClick={() => setShowJump(!showJump)}
+              className='ml-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-all hover:border-brand hover:text-brand'
+            >
+              跳转
+            </button>
           </div>
         </div>
 
-        {/* 日历容器：渐变光晕背景 */}
+        {/* 跳转面板 */}
+        {showJump && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className='card mb-4 flex items-center gap-3 p-4'
+          >
+            <span className='text-sm text-gray-600'>跳转到：</span>
+            <input
+              type='number'
+              min='2000'
+              max='2100'
+              placeholder='年'
+              value={jumpYear}
+              onChange={e => setJumpYear(e.target.value)}
+              className='w-20 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm'
+            />
+            <span className='text-gray-400'>年</span>
+            <input
+              type='number'
+              min='1'
+              max='12'
+              placeholder='月'
+              value={jumpMonth}
+              onChange={e => setJumpMonth(e.target.value)}
+              className='w-16 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm'
+            />
+            <span className='text-gray-400'>月</span>
+            <button
+              onClick={handleJump}
+              className='rounded-lg bg-brand px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-brand/80'
+            >
+              确定
+            </button>
+            <button
+              onClick={() => setShowJump(false)}
+              className='rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-50'
+            >
+              取消
+            </button>
+          </motion.div>
+        )}
+
+        {/* 统计面板 */}
+        <StatsPanel total={total} done={done} streak={streak} />
+
+        {/* 日历容器 */}
         <div className='relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand/5 via-transparent to-purple-500/5 p-3 max-sm:p-1.5'>
           {/* 背景装饰光斑 */}
           <span aria-hidden className='pointer-events-none absolute -top-12 -right-12 h-44 w-44 rounded-full bg-brand/10 blur-3xl' />
@@ -484,6 +617,16 @@ export default function Page() {
               const moreCount = dayItems.length - visibleItems.length
               const isWeekend = day.day() === 0 || day.day() === 6
               const festival = getFestival(dateStr)
+              const lunarDay = getLunarDayStr(day.toDate())
+              const solarTerm = getSolarTerm(day.toDate())
+              const holidayInfo = holidays[dateStr]
+              const isOffDay = holidayInfo?.isOffDay ?? false
+              
+              // 节日图标（lucide-react，非 emoji）
+              const FestivalIcon = festival ? getLucideIcon(festival.icon) : null
+              // 节气图标
+              const TermIcon = solarTerm ? getLucideIcon(solarTerm.icon) : null
+
               return (
                 <button
                   key={dateStr}
@@ -495,6 +638,8 @@ export default function Page() {
                   {dayItems.length > 0 && inMonth && !isSelected && (
                     <span className='absolute left-0 top-0 h-1.5 w-1.5 rounded-tr-full rounded-bl-full bg-brand/40' />
                   )}
+                  
+                  {/* 日期数字 */}
                   <span
                     className={`relative mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs transition-transform group-hover:scale-110 sm:ml-0 sm:mr-auto ${
                       isToday
@@ -513,6 +658,22 @@ export default function Page() {
                   )}
                   <span className='relative'>{day.date()}</span>
                 </span>
+
+                {/* 农历日期（右上角小字） */}
+                {inMonth && (
+                  <span className='absolute right-1 top-1 text-[9px] text-gray-400 sm:right-1.5 sm:top-1.5'>
+                    {lunarDay}
+                  </span>
+                )}
+
+                {/* 法定假日/调休标记 */}
+                {inMonth && isOffDay && (
+                  <span className='absolute left-1 top-1 rounded bg-red-500 px-1 text-[8px] font-bold text-white sm:left-1.5 sm:top-1.5'>
+                    休
+                  </span>
+                )}
+
+                {/* 事件列表 */}
                 <div className='hidden w-full flex-col gap-1 sm:flex'>
                   {visibleItems.map(item => (
                     <span
@@ -541,16 +702,29 @@ export default function Page() {
                     <span className='text-secondary px-1.5 text-[11px]'>还有 {moreCount} 条…</span>
                   )}
                 </div>
-                {/* 节日角标 */}
-                {inMonth && festival && (
+
+                {/* 节日角标（lucide-react 图标，非 emoji） */}
+                {inMonth && festival && FestivalIcon && (
                   <span
                     title={festival.name}
                     className={`pointer-events-none absolute right-1 bottom-1 flex items-center gap-0.5 rounded-full px-1.5 py-px text-[10px] leading-none font-medium ${festival.cls}`}
                   >
-                    <span className='text-[11px] leading-none'>{festival.emoji}</span>
+                    <FestivalIcon className='h-3 w-3' />
                     <span className='max-sm:hidden'>{festival.name}</span>
                   </span>
                 )}
+
+                {/* 节气角标（优先级低于节日） */}
+                {inMonth && !festival && solarTerm && TermIcon && (
+                  <span
+                    title={solarTerm.name}
+                    className='pointer-events-none absolute right-1 bottom-1 flex items-center gap-0.5 rounded-full bg-teal-50/90 px-1.5 py-px text-[10px] leading-none font-medium text-teal-600'
+                  >
+                    <TermIcon className='h-3 w-3' />
+                    <span className='max-sm:hidden'>{solarTerm.name}</span>
+                  </span>
+                )}
+
                 {/* 小屏圆点标记 */}
                 {dayItems.length > 0 && (
                   <div className='mx-auto mt-auto flex items-center gap-0.5 sm:hidden'>
