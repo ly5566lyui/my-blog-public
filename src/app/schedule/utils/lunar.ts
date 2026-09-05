@@ -1,76 +1,159 @@
-// 农历工具：基于 chinese-lunar 库，提供公历↔农历转换、节气查询
-import { solarToLunar, getTerm } from 'chinese-lunar'
+// 农历工具：自包含实现，无外部依赖
+// 基于 1900-2100 年农历数据表
 
-export interface LunarInfo {
-  year: number
-  month: number
-  day: number
-  monthStr: string
-  dayStr: string
-  isLeapMonth: boolean
-}
+const LUNAR_DATA = [
+  0x04bd8, 0x04ae0, 0x0a570, 0x054d5, 0x0d260, 0x0d950, 0x16554, 0x056a0, 0x09ad0, 0x055d2,
+  0x04ae0, 0x0a5b6, 0x0a4d0, 0x0d250, 0x1d255, 0x0b540, 0x0d6a0, 0x0ada2, 0x095b0, 0x14977,
+  0x04970, 0x0a4b0, 0x0b4b5, 0x06a50, 0x06d40, 0x1ab54, 0x02b60, 0x09570, 0x052f2, 0x04970,
+  0x06566, 0x0d4a0, 0x0ea50, 0x06e95, 0x05ad0, 0x02b60, 0x186e3, 0x092e0, 0x1c8d7, 0x0c950,
+  0x0d4a0, 0x1d8a6, 0x0b550, 0x056a0, 0x1a5b4, 0x025d0, 0x092d0, 0x0d2b2, 0x0a950, 0x0b557,
+  0x06ca0, 0x0b550, 0x15355, 0x04da0, 0x0a5b0, 0x14573, 0x052b0, 0x0a9a8, 0x0e950, 0x06aa0,
+  0x0aea6, 0x0ab50, 0x04b60, 0x0aae4, 0x0a570, 0x05260, 0x0f263, 0x0d950, 0x05b57, 0x056a0,
+  0x096d0, 0x04dd5, 0x04ad0, 0x0a4d0, 0x0d4d4, 0x0d250, 0x0d558, 0x0b540, 0x0b6a0, 0x195a6,
+  0x095b0, 0x049b0, 0x0a974, 0x0a4b0, 0x0b27a, 0x06a50, 0x06d40, 0x0af46, 0x0ab60, 0x09570,
+  0x04af5, 0x04970, 0x064b0, 0x074a3, 0x0ea50, 0x06b58, 0x05ac0, 0x0ab60, 0x096d5, 0x092e0,
+  0x0c960, 0x0d954, 0x0d4a0, 0x0da50, 0x07552, 0x056a0, 0x0abb7, 0x025d0, 0x092d0, 0x0cab5,
+  0x0a950, 0x0b4a0, 0x0baa4, 0x0ad50, 0x055d9, 0x04ba0, 0x0a5b0, 0x15176, 0x052b0, 0x0a930,
+  0x07954, 0x06aa0, 0x0ad50, 0x05b52, 0x04b60, 0x0a6e6, 0x0a4e0, 0x0d260, 0x0ea65, 0x0d530,
+  0x05aa0, 0x076a3, 0x096d0, 0x04afb, 0x04ad0, 0x0a4d0, 0x1d0b6, 0x0d250, 0x0d520, 0x0dd45,
+  0x0b5a0, 0x056d0, 0x055b2, 0x049b0, 0x0a577, 0x0a4b0, 0x0aa50, 0x1b255, 0x06d20, 0x0ada0,
+  0x14b63, 0x09370, 0x049f8, 0x04970, 0x064b0, 0x168a6, 0x0ea50, 0x06b20, 0x1a6c4, 0x0aae0,
+  0x0a2e0, 0x0d2e3, 0x0c960, 0x0d557, 0x0d4a0, 0x0da50, 0x05d55, 0x056a0, 0x0a6d0, 0x055d4,
+  0x052d0, 0x0a9b8, 0x0a950, 0x0b4a0, 0x0b6a6, 0x0ad50, 0x055a0, 0x0aba4, 0x0a5b0, 0x052b0,
+  0x0b273, 0x06930, 0x07337, 0x06aa0, 0x0ad50, 0x14b55, 0x04b60, 0x0a570, 0x054e4, 0x0d160,
+  0x0e968, 0x0d520, 0x0daa0, 0x16aa6, 0x056d0, 0x04ae0, 0x0a9d4, 0x0a2d0, 0x0d150, 0x0f252,
+  0x0d520
+]
 
 const MONTH_NAMES = ['正', '二', '三', '四', '五', '六', '七', '八', '九', '十', '冬', '腊']
 const DAY_NAMES = ['初一', '初二', '初三', '初四', '初五', '初六', '初七', '初八', '初九', '初十',
   '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十',
   '廿一', '廿二', '廿三', '廿四', '廿五', '廿六', '廿七', '廿八', '廿九', '三十']
 
+const SOLAR_TERM_DATES: Record<string, string> = {
+  '2024-01-06': '小寒', '2024-01-20': '大寒', '2024-02-04': '立春', '2024-02-19': '雨水',
+  '2024-03-05': '惊蛰', '2024-03-20': '春分', '2024-04-04': '清明', '2024-04-20': '谷雨',
+  '2024-05-05': '立夏', '2024-05-21': '小满', '2024-06-05': '芒种', '2024-06-21': '夏至',
+  '2024-07-06': '小暑', '2024-07-22': '大暑', '2024-08-07': '立秋', '2024-08-22': '处暑',
+  '2024-09-07': '白露', '2024-09-22': '秋分', '2024-10-08': '寒露', '2024-10-23': '霜降',
+  '2024-11-07': '立冬', '2024-11-22': '小雪', '2024-12-07': '大雪', '2024-12-21': '冬至',
+  '2025-01-05': '小寒', '2025-01-20': '大寒', '2025-02-03': '立春', '2025-02-18': '雨水',
+  '2025-03-05': '惊蛰', '2025-03-20': '春分', '2025-04-04': '清明', '2025-04-20': '谷雨',
+  '2025-05-05': '立夏', '2025-05-21': '小满', '2025-06-05': '芒种', '2025-06-21': '夏至',
+  '2025-07-07': '小暑', '2025-07-22': '大暑', '2025-08-07': '立秋', '2025-08-23': '处暑',
+  '2025-09-07': '白露', '2025-09-23': '秋分', '2025-10-08': '寒露', '2025-10-23': '霜降',
+  '2025-11-07': '立冬', '2025-11-22': '小雪', '2025-12-07': '大雪', '2025-12-22': '冬至',
+  '2026-01-05': '小寒', '2026-01-20': '大寒', '2026-02-04': '立春', '2026-02-19': '雨水',
+  '2026-03-05': '惊蛰', '2026-03-20': '春分', '2026-04-05': '清明', '2026-04-20': '谷雨',
+  '2026-05-05': '立夏', '2026-05-21': '小满', '2026-06-05': '芒种', '2026-06-21': '夏至',
+  '2026-07-07': '小暑', '2026-07-22': '大暑', '2026-08-07': '立秋', '2026-08-23': '处暑',
+  '2026-09-07': '白露', '2026-09-23': '秋分', '2026-10-08': '寒露', '2026-10-23': '霜降',
+  '2026-11-07': '立冬', '2026-11-22': '小雪', '2026-12-07': '大雪', '2026-12-22': '冬至',
+  '2027-01-05': '小寒', '2027-01-20': '大寒', '2027-02-04': '立春', '2027-02-19': '雨水',
+  '2027-03-06': '惊蛰', '2027-03-21': '春分', '2027-04-05': '清明', '2027-04-20': '谷雨',
+  '2027-05-05': '立夏', '2027-05-21': '小满', '2027-06-06': '芒种', '2027-06-21': '夏至',
+  '2027-07-07': '小暑', '2027-07-22': '大暑', '2027-08-07': '立秋', '2027-08-23': '处暑',
+  '2027-09-07': '白露', '2027-09-23': '秋分', '2027-10-08': '寒露', '2027-10-23': '霜降',
+  '2027-11-07': '立冬', '2027-11-22': '小雪', '2027-12-07': '大雪', '2027-12-22': '冬至',
+  '2028-01-06': '小寒', '2028-01-20': '大寒', '2028-02-04': '立春', '2028-02-19': '雨水',
+  '2028-03-05': '惊蛰', '2028-03-20': '春分', '2028-04-04': '清明', '2028-04-20': '谷雨',
+  '2028-05-05': '立夏', '2028-05-21': '小满', '2028-06-05': '芒种', '2028-06-21': '夏至',
+  '2028-07-06': '小暑', '2028-07-22': '大暑', '2028-08-07': '立秋', '2028-08-22': '处暑',
+  '2028-09-07': '白露', '2028-09-22': '秋分', '2028-10-08': '寒露', '2028-10-23': '霜降',
+  '2028-11-07': '立冬', '2028-11-22': '小雪', '2028-12-07': '大雪', '2028-12-21': '冬至',
+  '2029-01-05': '小寒', '2029-01-20': '大寒', '2029-02-03': '立春', '2029-02-18': '雨水',
+  '2029-03-05': '惊蛰', '2029-03-20': '春分', '2029-04-04': '清明', '2029-04-20': '谷雨',
+  '2029-05-05': '立夏', '2029-05-21': '小满', '2029-06-05': '芒种', '2029-06-21': '夏至',
+  '2029-07-07': '小暑', '2029-07-22': '大暑', '2029-08-07': '立秋', '2029-08-23': '处暑',
+  '2029-09-07': '白露', '2029-09-23': '秋分', '2029-10-08': '寒露', '2029-10-23': '霜降',
+  '2029-11-07': '立冬', '2029-11-22': '小雪', '2029-12-07': '大雪', '2029-12-22': '冬至',
+  '2030-01-05': '小寒', '2030-01-20': '大寒', '2030-02-04': '立春', '2030-02-19': '雨水',
+  '2030-03-05': '惊蛰', '2030-03-20': '春分', '2030-04-04': '清明', '2030-04-20': '谷雨',
+  '2030-05-05': '立夏', '2030-05-21': '小满', '2030-06-05': '芒种', '2030-06-21': '夏至',
+  '2030-07-07': '小暑', '2030-07-22': '大暑', '2030-08-07': '立秋', '2030-08-23': '处暑',
+  '2030-09-07': '白露', '2030-09-23': '秋分', '2030-10-08': '寒露', '2030-10-23': '霜降',
+  '2030-11-07': '立冬', '2030-11-22': '小雪', '2030-12-07': '大雪', '2030-12-21': '冬至'
+}
+
+export interface LunarInfo {
+  year: number; month: number; day: number
+  monthStr: string; dayStr: string; isLeapMonth: boolean
+}
+
+function getLunarYearDays(year: number): number {
+  let sum = 348
+  for (let i = 0x8000; i > 0x8; i >>= 1) sum += (LUNAR_DATA[year - 1900] & i) ? 1 : 0
+  return sum + getLeapDays(year)
+}
+
+function getLeapMonth(year: number): number { return LUNAR_DATA[year - 1900] & 0xf }
+
+function getLeapDays(year: number): number {
+  if (getLeapMonth(year)) return (LUNAR_DATA[year - 1900] & 0x10000) ? 30 : 29
+  return 0
+}
+
+function getLunarMonthDays(year: number, month: number): number {
+  return (LUNAR_DATA[year - 1900] & (0x10000 >> month)) ? 30 : 29
+}
+
 /** 公历 → 农历 */
 export function toLunar(date: Date): LunarInfo {
-  const lunar = solarToLunar(date)
+  const baseDate = new Date(1900, 0, 31)
+  let offset = Math.floor((date.getTime() - baseDate.getTime()) / 86400000)
+  
+  let year = 1900
+  for (; year < 2101 && offset > 0; year++) {
+    const daysInYear = getLunarYearDays(year)
+    if (offset < daysInYear) break
+    offset -= daysInYear
+  }
+  
+  const leapMonth = getLeapMonth(year)
+  let isLeap = false
+  let month = 1
+  
+  for (; month < 13 && offset > 0; month++) {
+    if (leapMonth > 0 && month === leapMonth + 1 && !isLeap) {
+      month--
+      isLeap = true
+    }
+    if (isLeap && month === leapMonth + 1) isLeap = false
+    offset -= getLunarMonthDays(year, month)
+  }
+  
+  if (offset === 0 && leapMonth > 0 && month === leapMonth + 1) {
+    if (isLeap) isLeap = false
+    else { isLeap = true; month-- }
+  }
+  if (offset < 0) { offset += getLunarMonthDays(year, month); month-- }
+  
   return {
-    year: lunar.year,
-    month: lunar.month,
-    day: lunar.day,
-    monthStr: MONTH_NAMES[lunar.month - 1] + '月',
-    dayStr: DAY_NAMES[lunar.day - 1],
-    isLeapMonth: lunar.isLeapMonth ?? false
+    year, month, day: offset + 1,
+    monthStr: (isLeap ? '闰' : '') + MONTH_NAMES[month - 1] + '月',
+    dayStr: DAY_NAMES[Math.min(offset, 29)],
+    isLeapMonth: isLeap
   }
 }
 
 /** 获取当天农历日期字符串（如"六月十六"） */
 export function getLunarDayStr(date: Date): string {
-  const lunar = toLunar(date)
-  return lunar.dayStr
+  return toLunar(date).dayStr
 }
 
-/** 获取当天是否为节气，返回节气信息 */
-export interface SolarTermInfo {
-  name: string
-  icon: string // lucide icon name
-}
+export interface SolarTermInfo { name: string; icon: string }
 
-const SOLAR_TERMS: { name: string; icon: string }[] = [
-  { name: '小寒', icon: 'Snowflake' },
-  { name: '大寒', icon: 'Snowflake' },
-  { name: '立春', icon: 'Leaf' },
-  { name: '雨水', icon: 'CloudRain' },
-  { name: '惊蛰', icon: 'Bug' },
-  { name: '春分', icon: 'Sun' },
-  { name: '清明', icon: 'TreePine' },
-  { name: '谷雨', icon: 'CloudDrizzle' },
-  { name: '立夏', icon: 'Flower' },
-  { name: '小满', icon: 'Wheat' },
-  { name: '芒种', icon: 'Wheat' },
-  { name: '夏至', icon: 'Sun' },
-  { name: '小暑', icon: 'Thermometer' },
-  { name: '大暑', icon: 'ThermometerSun' },
-  { name: '立秋', icon: 'Leaf' },
-  { name: '处暑', icon: 'Wind' },
-  { name: '白露', icon: 'Droplets' },
-  { name: '秋分', icon: 'Sun' },
-  { name: '寒露', icon: 'Droplets' },
-  { name: '霜降', icon: 'Snowflake' },
-  { name: '立冬', icon: 'Snowflake' },
-  { name: '小雪', icon: 'Snowflake' },
-  { name: '大雪', icon: 'Snowflake' },
-  { name: '冬至', icon: 'Snowflake' }
-]
+const TERM_ICONS: Record<string, string> = {
+  '小寒': 'Snowflake', '大寒': 'Snowflake', '立春': 'Leaf', '雨水': 'CloudRain',
+  '惊蛰': 'Bug', '春分': 'Sun', '清明': 'TreePine', '谷雨': 'CloudDrizzle',
+  '立夏': 'Flower', '小满': 'Wheat', '芒种': 'Wheat', '夏至': 'Sun',
+  '小暑': 'Thermometer', '大暑': 'ThermometerSun', '立秋': 'Leaf', '处暑': 'Wind',
+  '白露': 'Droplets', '秋分': 'Sun', '寒露': 'Droplets', '霜降': 'Snowflake',
+  '立冬': 'Snowflake', '小雪': 'Snowflake', '大雪': 'Snowflake', '冬至': 'Snowflake'
+}
 
 export function getSolarTerm(date: Date): SolarTermInfo | null {
-  const termIndex = getTerm(date)
-  if (termIndex >= 0 && termIndex < SOLAR_TERMS.length) {
-    return SOLAR_TERMS[termIndex]
-  }
-  return null
+  const key = date.toISOString().slice(0, 10)
+  const name = SOLAR_TERM_DATES[key]
+  return name ? { name, icon: TERM_ICONS[name] || 'Circle' } : null
 }
