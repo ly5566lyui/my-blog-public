@@ -1,5 +1,6 @@
 'use client'
 
+import SwingSign from './swing-sign'
 import HiCard from '@/app/(home)/hi-card'
 import ArtCard from '@/app/(home)/art-card'
 import ClockCard from '@/app/(home)/clock-card'
@@ -54,6 +55,7 @@ export default function Home() {
 	return (
 		<>
 			{siteContent.enableChristmas && <SnowfallBackground zIndex={0} count={!maxSM ? 125 : 20} />}
+			<SwingSign />
 
 			{editing && (
 				<div className='pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center pt-6'>
