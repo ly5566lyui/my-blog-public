@@ -328,18 +328,22 @@ export default function Page() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isEditMode])
 
-  // 初始化：优先读取 localStorage 缓存
+  // 初始化：优先读取 localStorage 缓存；缓存为空时以云端 list.json 为准
   useEffect(() => {
+    const base = initialList as ScheduleItem[]
     const cached = localStorage.getItem('schedule_cache_v1')
     if (cached) {
       try {
         const parsed = JSON.parse(cached)
-        if (Array.isArray(parsed)) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           setSchedule(parsed)
           setOriginalSchedule(parsed)
+          return
         }
       } catch {}
     }
+    setSchedule(base)
+    setOriginalSchedule(base)
   }, [])
 
   // schedule 变化时自动同步到 localStorage
