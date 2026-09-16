@@ -112,12 +112,13 @@ function mountWoodBadge(canvas, opts) {
     new THREE.PlaneGeometry(7.8, 7.8),
     new THREE.ShaderMaterial({
       transparent: true, depthWrite: false,
-      uniforms: { uStrength: { value: widget ? .1 : .13 } },
+      uniforms: { uStrength: { value: 0 } },
       vertexShader: 'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
       fragmentShader: 'varying vec2 vUv;uniform float uStrength;void main(){vec2 p=(vUv-.5)*2.;float a=pow(smoothstep(1.,0.,length(p)),2.8)*uStrength;gl_FragColor=vec4(.36,.52,.20,a);}',
     })
   )
   halo.position.set(.5, widget ? .6 : -.3, -2.2)
+  halo.visible = !widget
   scene.add(halo)
 
   const dustCount = 100
@@ -130,6 +131,7 @@ function mountWoodBadge(canvas, opts) {
   }
   dustGeometry.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3))
   const dust = new THREE.Points(dustGeometry, new THREE.PointsMaterial({ color: 0xd8cfad, size: .019, transparent: true, opacity: .27, depthWrite: false }))
+  dust.visible = !widget
   scene.add(dust)
 
   scene.add(new THREE.HemisphereLight(0xfff2d0, 0x11180e, 1.15))
