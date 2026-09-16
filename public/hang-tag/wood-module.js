@@ -488,6 +488,7 @@ function mountWoodBadge(canvas, opts) {
   const motion = {
     angleZ: 0, velocityZ: 0, angleX: 0, velocityX: 0,
     flip: 0, flipTarget: 0, flipVelocity: 0,
+    flipFrom: 0, flipElapsed: 0, flipDuration: .92, flipDirection: 1, flipping: false,
     hover: 0, hoverTarget: 0, dragging: false,
     dragCenter: new THREE.Vector3(), dragPrevious: new THREE.Vector3(), dragVelocity: new THREE.Vector3(),
   }
@@ -583,14 +584,45 @@ function mountWoodBadge(canvas, opts) {
     const targetX = clamp(tipVelocity.z * .025 + segmentZ * 1.2, -.38, .38)
     ;[motion.angleZ, motion.velocityZ] = spring(motion.angleZ, motion.velocityZ, targetZ, 47, 8.5, dt)
     ;[motion.angleX, motion.velocityX] = spring(motion.angleX, motion.velocityX, targetX, 41, 8.8, dt)
-    ;[motion.flip, motion.flipVelocity] = spring(motion.flip, motion.flipVelocity, motion.flipTarget, 62, 10.8, dt)
-    euler.set(motion.angleX, motion.flip, motion.angleZ, 'XYZ')
+    let stagedTiltX = 0, stagedTiltZ = 0, stagedScale = 0
+    if (motion.flipping) {
+      motion.flipElapsed += dt
+      const phase = clamp(motion.flipElapsed / motion.flipDuration, 0, 1)
+      if (phase < .2) {
+        const lead = phase / .2
+        const eased = lead * lead * (3 - 2 * lead)
+        motion.flip = motion.flipFrom + motion.flipDirection * .1 * eased
+        stagedTiltX = -.14 * eased
+        stagedTiltZ = motion.flipDirection * .035 * eased
+        stagedScale = .018 * eased
+      } else if (phase < .82) {
+        const turn = (phase - .2) / .62
+        const eased = .5 - Math.cos(turn * Math.PI) * .5
+        const arc = Math.sin(turn * Math.PI)
+        motion.flip = motion.flipFrom + motion.flipDirection * (.1 + (Math.PI - .1) * eased)
+        stagedTiltX = -.14 * (1 - eased) - .045 * arc
+        stagedTiltZ = motion.flipDirection * (.035 * (1 - eased) + .055 * arc)
+        stagedScale = .018 + .018 * arc
+      } else {
+        const settle = (phase - .82) / .18
+        const eased = 1 - Math.pow(1 - settle, 3)
+        motion.flip = motion.flipTarget + motion.flipDirection * Math.sin(settle * Math.PI) * .045
+        stagedTiltX = -.045 * (1 - eased)
+        stagedTiltZ = motion.flipDirection * .025 * (1 - eased)
+        stagedScale = .018 * (1 - eased)
+      }
+      if (phase >= 1) {
+        motion.flip = motion.flipTarget
+        motion.flipping = false
+      }
+    }
+    euler.set(motion.angleX + stagedTiltX, motion.flip, motion.angleZ + stagedTiltZ, 'XYZ')
     plaqueQuaternion.setFromEuler(euler)
     plaqueRig.quaternion.copy(plaqueQuaternion)
     plaqueCenterFromTip(plaqueRig.position)
     if (widget) confinePlaque()
     motion.hover += (motion.hoverTarget - motion.hover) * (1 - Math.exp(-dt * 12))
-    plaqueRig.scale.setScalar(1 + motion.hover * .018)
+    plaqueRig.scale.setScalar(1 + motion.hover * .018 + stagedScale)
     woodMaterial.clearcoat = .16 + motion.hover * .12
     plaqueLeaves.forEach((entry) => { entry.leaf.rotation.x = Math.sin(elapsed * 1.2 + entry.phase) * .08 })
   }
@@ -729,11 +761,21 @@ function mountWoodBadge(canvas, opts) {
       motion.velocityZ -= direction * .1
       motion.velocityX += .06
     },
-    flip() { motion.flipTarget += Math.PI; motion.flipVelocity += .68; cord.kick(.6, 0, 1.15) },
+    flip() {
+      if (motion.flipping) return
+      motion.flipFrom = motion.flip
+      motion.flipDirection = 1
+      motion.flipTarget = motion.flipFrom + Math.PI
+      motion.flipElapsed = 0
+      if (prefersReducedMotion) motion.flip = motion.flipTarget
+      else motion.flipping = true
+      cord.kick(.42, -.22, .82)
+    },
     reset() {
       cord.reset(false)
       motion.angleZ = motion.velocityZ = motion.angleX = motion.velocityX = 0
-      motion.flip = motion.flipTarget = motion.flipVelocity = 0
+      motion.flip = motion.flipTarget = motion.flipVelocity = motion.flipFrom = motion.flipElapsed = 0
+      motion.flipping = false
       motion.dragging = false; motion.hover = motion.hoverTarget = 0
     },
     dispose() {
