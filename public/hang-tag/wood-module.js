@@ -595,9 +595,16 @@ function mountWoodBadge(canvas, opts) {
     camera.aspect = width / height
     if (widget) {
       camera.fov = 35
-      const dist = Math.max(7.0 / camera.aspect, 12.4)
+      const tan = Math.tan((35 * Math.PI / 180) / 2) // ≈0.3153
+      // 以木牌为主体取景：点牌面占满画面，绳子顶端自然延伸出画，木牌不被压缩
+      const halfW = 2.0 // 牌宽 2.72/2 + 藤叶余量
+      const halfH = 2.6 // 牌高 3.82/2 + 上留绳头余量
+      const dist = Math.max(halfH / tan, halfW / (tan * camera.aspect)) + 0.35
       cameraBase.z = dist
       camera.position.z = dist
+      const targetY = 4.35 - 3.05 - 3.82 / 2 - 0.15 // 木牌中心 y ≈ 挂点 - 绳长 - 半牌高
+      cameraBase.y = targetY
+      lookTarget.y = targetY
     } else {
       camera.fov = width / height < .72 ? 40 : width / height < 1 ? 38 : 35
       const dist = width / height < .72 ? 14.2 : width / height < 1 ? 14.2 : 13.7

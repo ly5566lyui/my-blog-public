@@ -89,7 +89,7 @@ export default function SwingSign() {
 
 	return (
 		<div className='pointer-events-none fixed left-1/2 top-0 z-40 -translate-x-1/2' aria-label='随心记'>
-			<div className='relative h-[200px] w-[132px] max-sm:h-[170px] max-sm:w-[112px]'>
+			<div className='relative h-[260px] w-[180px] max-sm:h-[220px] max-sm:w-[150px]'>
 				<canvas
 					ref={canvasRef}
 					className='pointer-events-auto block h-full w-full touch-none'
