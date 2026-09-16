@@ -493,7 +493,7 @@ function mountWoodBadge(canvas, opts) {
     dragCenter: new THREE.Vector3(), dragPrevious: new THREE.Vector3(), dragVelocity: new THREE.Vector3(),
   }
   const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2(), dragPlane = new THREE.Plane()
-  const dragHit = new THREE.Vector3(), dragOffset = new THREE.Vector3(), planeNormal = new THREE.Vector3(), eyeWorldOffset = new THREE.Vector3()
+  const dragHit = new THREE.Vector3(), dragOffset = new THREE.Vector3(), planeNormal = new THREE.Vector3(), eyeWorldOffset = new THREE.Vector3(), pickLocalPoint = new THREE.Vector3()
   const euler = new THREE.Euler(0, 0, 0, 'XYZ'), plaqueQuaternion = new THREE.Quaternion(), lastTip = cord.tip.clone()
 
   function updatePointer(x, y) {
@@ -559,7 +559,14 @@ function mountWoodBadge(canvas, opts) {
     motion.velocityZ += clamp(-motion.dragVelocity.x * .036, -.46, .46)
     eventTarget.style.cursor = ''
     const quick = performance.now() - downTime < 450
-    if (onPick && !movedFar && quick) onPick()
+    if (onPick && !movedFar && quick) {
+      const hit = pickPlaque(event.clientX, event.clientY)
+      if (hit) {
+        pickLocalPoint.copy(hit.point)
+        plaqueRig.worldToLocal(pickLocalPoint)
+        onPick(pickLocalPoint.y >= 0 ? 'upper' : 'lower')
+      }
+    }
     downPos = null
   }
   const eventTarget = inputEl || canvas
