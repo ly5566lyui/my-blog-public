@@ -42,7 +42,7 @@ function mountWoodBadge(canvas, opts) {
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, CFG.maxPixelRatio))
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = widget ? 1.16 : 1.08
+  renderer.toneMappingExposure = widget ? 1.08 : 1.08
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
   if (widget) renderer.setClearColor(0x000000, 0)
@@ -112,7 +112,7 @@ function mountWoodBadge(canvas, opts) {
   // reads like a flat sticker pasted over the homepage.
   const shadowSurface = new THREE.Mesh(
     new THREE.PlaneGeometry(widget ? 5.4 : 15, widget ? 6.8 : 13),
-    new THREE.ShadowMaterial({ color: 0x142015, opacity: widget ? .13 : .17 })
+    new THREE.ShadowMaterial({ color: 0x142015, opacity: widget ? .1 : .17 })
   )
   shadowSurface.position.set(0, widget ? -.15 : 0, widget ? -.5 : -2.08)
   shadowSurface.receiveShadow = true
@@ -122,7 +122,7 @@ function mountWoodBadge(canvas, opts) {
     new THREE.PlaneGeometry(7.8, 7.8),
     new THREE.ShaderMaterial({
       transparent: true, depthWrite: false,
-      uniforms: { uStrength: { value: widget ? .05 : 0 } },
+      uniforms: { uStrength: { value: widget ? .032 : 0 } },
       vertexShader: 'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
       fragmentShader: 'varying vec2 vUv;uniform float uStrength;void main(){vec2 p=(vUv-.5)*2.;float a=pow(smoothstep(1.,0.,length(p)),2.8)*uStrength;gl_FragColor=vec4(.36,.52,.20,a);}',
     })
@@ -156,7 +156,7 @@ function mountWoodBadge(canvas, opts) {
   scene.add(keyLight)
   const rimLight = new THREE.DirectionalLight(0xa7c56d, 2.5)
   rimLight.position.set(5, 1, -4); scene.add(rimLight)
-  const warmLight = new THREE.PointLight(0xe2a25e, widget ? 13 : 18, 18, 2)
+  const warmLight = new THREE.PointLight(0xe5b274, widget ? 9 : 18, 18, 2)
   warmLight.position.set(4, -.5, 5); scene.add(warmLight)
 
   /* Wood textures ------------------------------------------------------ */
@@ -187,7 +187,7 @@ function mountWoodBadge(canvas, opts) {
     const ctx = c.getContext('2d')
     const rnd = seeded(side === 'front' ? 1709 : 1717)
     const gradient = ctx.createLinearGradient(0, 0, W, H)
-    gradient.addColorStop(0, '#ad7c49'); gradient.addColorStop(.48, '#8c5c35'); gradient.addColorStop(1, '#704527')
+    gradient.addColorStop(0, '#b98a58'); gradient.addColorStop(.48, '#98673f'); gradient.addColorStop(1, '#74492d')
     ctx.fillStyle = gradient; ctx.fillRect(0, 0, W, H)
 
     ctx.globalAlpha = .24
@@ -207,7 +207,7 @@ function mountWoodBadge(canvas, opts) {
     }
     ctx.globalAlpha = 1
 
-    const ink = '#211309', pale = '#f1ddb1', green = '#21391f'
+    const ink = '#21150d', pale = '#f4e6c4', green = '#2f4931'
     ctx.strokeStyle = 'rgba(42,23,10,.42)'; ctx.lineWidth = 3; roundRect(ctx, 34, 34, W - 68, H - 68, 34); ctx.stroke()
     ctx.strokeStyle = 'rgba(229,211,171,.18)'; ctx.lineWidth = 1; roundRect(ctx, 48, 48, W - 96, H - 96, 30); ctx.stroke()
 
@@ -249,7 +249,7 @@ function mountWoodBadge(canvas, opts) {
   scene.add(plaqueRig)
 
   const woodMaterial = new THREE.MeshPhysicalMaterial({
-    color: 0x704522, roughness: .62, metalness: .01, clearcoat: .16, clearcoatRoughness: .58, envMapIntensity: .8,
+    color: 0x74492d, roughness: .7, metalness: .01, clearcoat: .08, clearcoatRoughness: .7, envMapIntensity: .68,
   })
   const shell = new THREE.Mesh(new RoundedBoxGeometry(CFG.plaqueW, CFG.plaqueH, CFG.plaqueD, 7, .18), woodMaterial)
   shell.castShadow = true; shell.receiveShadow = true; plaqueRig.add(shell)
@@ -261,7 +261,7 @@ function mountWoodBadge(canvas, opts) {
   backFace.position.z = -CFG.plaqueD / 2 - .004; backFace.rotation.y = Math.PI
   plaqueRig.add(frontFace, backFace)
 
-  const brass = new THREE.MeshPhysicalMaterial({ color: 0xa98245, roughness: .28, metalness: .82, clearcoat: .35, envMapIntensity: 1.2 })
+  const brass = new THREE.MeshPhysicalMaterial({ color: 0x9a7949, roughness: .36, metalness: .72, clearcoat: .2, envMapIntensity: 1 })
   const darkHole = new THREE.MeshStandardMaterial({ color: 0x160d07, roughness: .9 })
   const hole = new THREE.Mesh(new THREE.CylinderGeometry(.145, .145, CFG.plaqueD + .05, 28), darkHole)
   hole.rotation.x = Math.PI / 2; hole.position.set(0, CFG.eyeY, 0); plaqueRig.add(hole)
@@ -278,12 +278,12 @@ function mountWoodBadge(canvas, opts) {
   const leafGeometry = new THREE.ShapeGeometry(leafShape, 8)
   leafGeometry.computeVertexNormals()
   const leafMaterials = [
-    new THREE.MeshStandardMaterial({ color: 0x456d31, roughness: .74, side: THREE.DoubleSide }),
-    new THREE.MeshStandardMaterial({ color: 0x6f8d42, roughness: .72, side: THREE.DoubleSide }),
-    new THREE.MeshStandardMaterial({ color: 0x294d29, roughness: .78, side: THREE.DoubleSide }),
+    new THREE.MeshStandardMaterial({ color: 0x4f7040, roughness: .78, side: THREE.DoubleSide }),
+    new THREE.MeshStandardMaterial({ color: 0x78915a, roughness: .76, side: THREE.DoubleSide }),
+    new THREE.MeshStandardMaterial({ color: 0x385438, roughness: .8, side: THREE.DoubleSide }),
   ]
-  const vineMaterial = new THREE.MeshStandardMaterial({ color: 0x36582c, roughness: .82, metalness: 0 })
-  const youngVineMaterial = new THREE.MeshStandardMaterial({ color: 0x658144, roughness: .78, metalness: 0 })
+  const vineMaterial = new THREE.MeshStandardMaterial({ color: 0x3f6138, roughness: .84, metalness: 0 })
+  const youngVineMaterial = new THREE.MeshStandardMaterial({ color: 0x718957, roughness: .8, metalness: 0 })
 
   function addStaticVine(points, radius, material, phase) {
     const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal')
@@ -630,8 +630,8 @@ function mountWoodBadge(canvas, opts) {
       camera.fov = 32
       const tan = Math.tan((camera.fov * Math.PI / 180) / 2)
       const plaqueCenterY = CFG.anchor.y - CFG.ropeLength * (1 + CFG.ropeRestStretch) - CFG.eyeY
-      const objectTop = CFG.anchor.y + .3
-      const objectBottom = plaqueCenterY - CFG.plaqueH / 2 - .72
+      const objectTop = CFG.anchor.y + .2
+      const objectBottom = plaqueCenterY - CFG.plaqueH / 2 - .38
       const baseHalfH = (objectTop - objectBottom) * .5
       const halfH = Math.max(baseHalfH, (CFG.plaqueW / 2 + .3) / camera.aspect)
       const camY = (objectTop + objectBottom) * .5
@@ -672,14 +672,14 @@ function mountWoodBadge(canvas, opts) {
     updatePlaqueMotion(dt, elapsed)
     const tensionRatio = clamp(cord.stretch / CFG.ropeVisualStretch, 0, 1)
     ropeMaterial.map.repeat.y = 12 / (1 + cord.stretch)
-    halo.material.uniforms.uStrength.value = (widget ? .052 : .13) + tensionRatio * .035
+    halo.material.uniforms.uStrength.value = (widget ? .034 : .13) + tensionRatio * .025
     if (backdrop) backdrop.material.uniforms.uTime.value = elapsed
     if (!prefersReducedMotion && !motion.dragging) {
-      camera.position.x += (Math.sin(elapsed * .16) * .1 - camera.position.x) * .012
-      camera.position.y += (cameraBase.y + Math.sin(elapsed * .2) * .05 - camera.position.y) * .012
+      camera.position.x += (Math.sin(elapsed * .16) * .04 - camera.position.x) * .012
+      camera.position.y += (cameraBase.y + Math.sin(elapsed * .2) * .025 - camera.position.y) * .012
       camera.lookAt(lookTarget)
       dust.rotation.y = elapsed * .006
-      warmLight.intensity = (widget ? 12.5 : 17.5) + Math.sin(elapsed * .65) * (widget ? .7 : 1.2)
+      warmLight.intensity = (widget ? 8.8 : 17.5) + Math.sin(elapsed * .65) * (widget ? .35 : 1.2)
     }
     reportPlaqueBox()
     renderer.render(scene, camera)

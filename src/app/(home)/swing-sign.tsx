@@ -106,6 +106,7 @@ export default function SwingSign() {
 
 	useEffect(() => {
 		if (!ready) return
+		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 		const timer = window.setTimeout(() => apiRef.current?.pulse(), 1100)
 		return () => window.clearTimeout(timer)
 	}, [ready])
@@ -113,13 +114,11 @@ export default function SwingSign() {
 	return (
 		<section
 			aria-label='藤蔓木牌：随心记入口'
-			className='group relative z-20 h-[430px] w-[min(92vw,360px)] shrink-0 overflow-hidden rounded-[40px] border bg-white/18 shadow-[0_30px_80px_-45px_rgba(53,79,47,0.55)] backdrop-blur-[2px] min-[1400px]:top-10 min-[1400px]:right-auto min-[1400px]:bottom-auto min-[1400px]:left-4 min-[1400px]:h-[420px] min-[1400px]:w-[220px] sm:fixed sm:right-3 sm:bottom-3 sm:h-[350px] sm:w-[190px] sm:rounded-[30px] sm:border-white/35'>
-			<div className='pointer-events-none absolute inset-x-5 top-4 z-10 flex items-center justify-between font-mono text-[9px] tracking-[0.18em] text-[#49634b]/70 uppercase'>
-				<span>Field notes</span>
-				<span className='hidden items-center gap-1.5 sm:flex'>
-					<i className='h-1.5 w-1.5 rounded-full bg-[#7b9a52] shadow-[0_0_10px_#7b9a52]' />
-					Alive
-				</span>
+			className='group relative z-20 h-[430px] w-[min(92vw,360px)] shrink-0 overflow-hidden rounded-[38px] border border-white/65 bg-[linear-gradient(155deg,rgba(255,253,245,0.62),rgba(237,245,231,0.32))] shadow-[0_24px_65px_-38px_rgba(48,76,49,0.5),inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur-[6px] sm:fixed sm:top-1/2 sm:right-auto sm:bottom-auto sm:left-4 sm:h-[390px] sm:w-[204px] sm:-translate-y-1/2 sm:rounded-[32px] xl:left-3 xl:h-[410px] xl:w-[208px]'>
+			<div className='pointer-events-none absolute inset-[1px] z-10 rounded-[inherit] border border-white/30' />
+			<div className='pointer-events-none absolute inset-x-5 top-4 z-10 flex items-center justify-between font-mono text-[9px] tracking-[0.16em] text-[#526852]/68 uppercase'>
+				<span>随心记</span>
+				<span>拖拽 · 翻面</span>
 			</div>
 
 			{failed ? (
@@ -139,25 +138,25 @@ export default function SwingSign() {
 				/>
 			)}
 
-			<div className='absolute inset-x-0 bottom-3 z-20 flex items-center justify-center gap-1.5 px-3'>
+			<div className='absolute inset-x-3 bottom-3 z-20 flex items-center justify-center gap-1.5 rounded-full border border-white/55 bg-[#f7f3e8]/72 p-1.5 shadow-[0_10px_30px_-20px_rgba(43,65,42,0.7)] backdrop-blur-md'>
 				<button
 					type='button'
 					onClick={() => apiRef.current?.pulse()}
-					className='flex h-10 w-10 items-center justify-center rounded-full border border-white/55 bg-white/55 text-[#456047] shadow-sm backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white/75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#55784e]'
+					className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#4c654c] transition-[background-color,color,transform] hover:-translate-y-0.5 hover:bg-white/70 hover:text-[#304b37] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#55784e]'
 					aria-label='轻弹木牌'>
 					<Sparkles aria-hidden='true' className='h-4 w-4' />
 				</button>
 				<button
 					type='button'
 					onClick={() => router.push('/blog')}
-					className='flex h-10 items-center gap-2 rounded-full border border-white/60 bg-[#365b43]/90 px-4 text-xs font-medium tracking-wide text-white shadow-sm backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-[#294c36] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#55784e]'>
+					className='flex h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full bg-[#3f6248] px-3 text-xs font-medium tracking-wide text-[#fffdf6] shadow-[0_6px_18px_-10px_rgba(39,70,47,0.9)] transition-[background-color,transform] hover:-translate-y-0.5 hover:bg-[#31543c] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#55784e]'>
 					<BookOpenText aria-hidden='true' className='h-4 w-4' />
 					随心记
 				</button>
 				<button
 					type='button'
 					onClick={() => apiRef.current?.flip()}
-					className='flex h-10 w-10 items-center justify-center rounded-full border border-white/55 bg-white/55 text-[#456047] shadow-sm backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white/75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#55784e]'
+					className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#4c654c] transition-[background-color,color,transform] hover:-translate-y-0.5 hover:bg-white/70 hover:text-[#304b37] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#55784e]'
 					aria-label='翻转木牌'>
 					<RotateCcw aria-hidden='true' className='h-4 w-4' />
 				</button>
