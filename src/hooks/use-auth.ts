@@ -7,9 +7,9 @@ interface AuthStore {
 	privateKey: string | null
 
 	// Actions
-	setPrivateKey: (key: string) => void
+	setPrivateKey: (key: string) => Promise<void>
 	clearAuth: () => void
-	refreshAuthState: () => void
+	refreshAuthState: () => Promise<void>
 	getAuthToken: () => Promise<string>
 }
 
@@ -27,11 +27,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
 	clearAuth: () => {
 		clearAllAuthCache()
-		set({ isAuth: false })
+		set({ isAuth: false, privateKey: null })
 	},
 
 	refreshAuthState: async () => {
-		set({ isAuth: await checkAuth() })
+		const [isAuth, cachedKey] = await Promise.all([checkAuth(), getPemFromCache()])
+		set({ isAuth, privateKey: cachedKey ?? get().privateKey })
 	},
 
 	getAuthToken: async () => {
@@ -41,14 +42,15 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 	}
 }))
 
-getPemFromCache().then((key) => {
+getPemFromCache().then(key => {
 	if (key) {
 		useAuthStore.setState({ privateKey: key })
 	}
 })
 
-checkAuth().then((isAuth) => {
+checkAuth().then(isAuth => {
 	if (isAuth) {
 		useAuthStore.setState({ isAuth })
 	}
 })
+

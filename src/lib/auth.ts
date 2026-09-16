@@ -1,8 +1,8 @@
-import { createInstallationToken, getInstallationId, signAppJwt } from './github-client'
+import { createInstallationToken, getInstallationId, GH_API, signAppJwt } from './github-client'
 import { GITHUB_CONFIG } from '@/consts'
 import { useAuthStore } from '@/hooks/use-auth'
 import { toast } from 'sonner'
-import { decrypt,encrypt } from './aes256-util'
+import { decrypt, encrypt } from './aes256-util'
 
 const GITHUB_TOKEN_CACHE_KEY = 'github_token'
 const GITHUB_PEM_CACHE_KEY = 'p_info'
@@ -107,3 +107,29 @@ export async function getAuthToken(): Promise<string> {
 
 	return token
 }
+
+/**
+ * 向 GitHub 发起最小化请求，确认当前缓存令牌或 PEM 确实有权访问本仓库。
+ * 不只依赖“缓存中存在字段”来判定已鉴权。
+ */
+export async function verifyAuth(): Promise<boolean> {
+	try {
+		const token = await getAuthToken()
+		const response = await fetch(`${GH_API}/repos/${GITHUB_CONFIG.OWNER}/${GITHUB_CONFIG.REPO}`, {
+			headers: {
+				Authorization: `Bearer ${token}`,
+				Accept: 'application/vnd.github+json',
+				'X-GitHub-Api-Version': '2022-11-28'
+			}
+		})
+
+		if (!response.ok) throw new Error(`auth verification failed: ${response.status}`)
+		return true
+	} catch (error) {
+		console.error('[Auth] 身份验证失败', error)
+		clearAllAuthCache()
+		useAuthStore.setState({ isAuth: false, privateKey: null })
+		return false
+	}
+}
+
