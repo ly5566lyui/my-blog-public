@@ -586,8 +586,8 @@ function mountWoodBadge(canvas, opts) {
 
   function resize() {
     const parent = canvas.parentElement
-    const width = Math.max(1, widget && parent ? parent.clientWidth : innerWidth)
-    const height = Math.max(1, widget && parent ? parent.clientHeight : innerHeight)
+    const width = Math.max(1, parent ? parent.clientWidth : innerWidth)
+    const height = Math.max(1, parent ? parent.clientHeight : innerHeight)
     renderer.setSize(width, height, false)
     renderer.setPixelRatio(Math.min(devicePixelRatio || 1, CFG.maxPixelRatio))
     camera.aspect = width / height
