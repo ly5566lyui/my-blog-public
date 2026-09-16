@@ -18,14 +18,14 @@ function mountWoodBadge(canvas, opts) {
   const clamp = THREE.MathUtils.clamp
 
   const CFG = {
-    ropeSegments: 42,
-    ropeLength: 3.05,
+    ropeSegments: widget ? 32 : 42,
+    ropeLength: widget ? 1.95 : 3.05,
     ropeRestStretch: 0.012,
     ropeSafetyStretch: 2.6,
     ropeVisualStretch: 0.72,
     ropeElasticity: 42,
     ropeElasticDamping: 2.65,
-    anchor: new THREE.Vector3(0, 4.35, 0),
+    anchor: new THREE.Vector3(0, widget ? 3.2 : 4.35, 0),
     gravity: -12.8,
     damping: 0.982,
     iterations: 13,
@@ -42,7 +42,7 @@ function mountWoodBadge(canvas, opts) {
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, CFG.maxPixelRatio))
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 1.08
+  renderer.toneMappingExposure = widget ? 1.16 : 1.08
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
   if (widget) renderer.setClearColor(0x000000, 0)
@@ -54,8 +54,8 @@ function mountWoodBadge(canvas, opts) {
   }
 
   const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 80)
-  const cameraBase = new THREE.Vector3(0, widget ? -2.19 : 0.38, 14)
-  const lookTarget = new THREE.Vector3(0, widget ? -2.19 : 0.2, 0)
+  const cameraBase = new THREE.Vector3(0, widget ? 0 : 0.38, 14)
+  const lookTarget = new THREE.Vector3(0, widget ? 0 : 0.2, 0)
   camera.position.copy(cameraBase)
   camera.lookAt(lookTarget)
 
@@ -81,7 +81,7 @@ function mountWoodBadge(canvas, opts) {
   }
   scene.environment = buildEnvironment()
 
-  let backdrop = null, shadowSurface = null
+  let backdrop = null
   if (!widget) {
     backdrop = new THREE.Mesh(
       new THREE.PlaneGeometry(34, 24),
@@ -106,21 +106,29 @@ function mountWoodBadge(canvas, opts) {
     backdrop.position.z = -8
     scene.add(backdrop)
 
-    shadowSurface = new THREE.Mesh(new THREE.PlaneGeometry(15, 13), new THREE.ShadowMaterial({ color: 0x000000, opacity: .17 }))
-    shadowSurface.position.z = -2.08; shadowSurface.receiveShadow = true; scene.add(shadowSurface)
   }
+
+  // Transparent widgets still need a soft receiving plane; otherwise the plaque
+  // reads like a flat sticker pasted over the homepage.
+  const shadowSurface = new THREE.Mesh(
+    new THREE.PlaneGeometry(widget ? 5.4 : 15, widget ? 6.8 : 13),
+    new THREE.ShadowMaterial({ color: 0x142015, opacity: widget ? .13 : .17 })
+  )
+  shadowSurface.position.set(0, widget ? -.15 : 0, widget ? -.5 : -2.08)
+  shadowSurface.receiveShadow = true
+  scene.add(shadowSurface)
 
   const halo = new THREE.Mesh(
     new THREE.PlaneGeometry(7.8, 7.8),
     new THREE.ShaderMaterial({
       transparent: true, depthWrite: false,
-      uniforms: { uStrength: { value: 0 } },
+      uniforms: { uStrength: { value: widget ? .05 : 0 } },
       vertexShader: 'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
       fragmentShader: 'varying vec2 vUv;uniform float uStrength;void main(){vec2 p=(vUv-.5)*2.;float a=pow(smoothstep(1.,0.,length(p)),2.8)*uStrength;gl_FragColor=vec4(.36,.52,.20,a);}',
     })
   )
-  halo.position.set(.5, widget ? .6 : -.3, -2.2)
-  halo.visible = !widget
+  halo.position.set(widget ? .15 : .5, widget ? -.2 : -.3, -2.2)
+  halo.visible = true
   scene.add(halo)
 
   const dustCount = 100
@@ -140,7 +148,7 @@ function mountWoodBadge(canvas, opts) {
   const keyLight = new THREE.DirectionalLight(0xffeed0, 3.6)
   keyLight.position.set(-4.5, 7, 6.5)
   keyLight.castShadow = true
-  keyLight.shadow.mapSize.set(1536, 1536)
+  keyLight.shadow.mapSize.set(widget ? 1024 : 1536, widget ? 1024 : 1536)
   keyLight.shadow.camera.left = -5; keyLight.shadow.camera.right = 5
   keyLight.shadow.camera.top = 6; keyLight.shadow.camera.bottom = -6
   keyLight.shadow.camera.near = 1; keyLight.shadow.camera.far = 24
@@ -148,7 +156,7 @@ function mountWoodBadge(canvas, opts) {
   scene.add(keyLight)
   const rimLight = new THREE.DirectionalLight(0xa7c56d, 2.5)
   rimLight.position.set(5, 1, -4); scene.add(rimLight)
-  const warmLight = new THREE.PointLight(0xe2a25e, 18, 18, 2)
+  const warmLight = new THREE.PointLight(0xe2a25e, widget ? 13 : 18, 18, 2)
   warmLight.position.set(4, -.5, 5); scene.add(warmLight)
 
   /* Wood textures ------------------------------------------------------ */
@@ -179,7 +187,7 @@ function mountWoodBadge(canvas, opts) {
     const ctx = c.getContext('2d')
     const rnd = seeded(side === 'front' ? 1709 : 1717)
     const gradient = ctx.createLinearGradient(0, 0, W, H)
-    gradient.addColorStop(0, '#9a6a3b'); gradient.addColorStop(.48, '#81532e'); gradient.addColorStop(1, '#684021')
+    gradient.addColorStop(0, '#ad7c49'); gradient.addColorStop(.48, '#8c5c35'); gradient.addColorStop(1, '#704527')
     ctx.fillStyle = gradient; ctx.fillRect(0, 0, W, H)
 
     ctx.globalAlpha = .24
@@ -199,7 +207,7 @@ function mountWoodBadge(canvas, opts) {
     }
     ctx.globalAlpha = 1
 
-    const ink = '#25170d', pale = '#e5d3ab', green = '#243a20'
+    const ink = '#211309', pale = '#f1ddb1', green = '#21391f'
     ctx.strokeStyle = 'rgba(42,23,10,.42)'; ctx.lineWidth = 3; roundRect(ctx, 34, 34, W - 68, H - 68, 34); ctx.stroke()
     ctx.strokeStyle = 'rgba(229,211,171,.18)'; ctx.lineWidth = 1; roundRect(ctx, 48, 48, W - 96, H - 96, 30); ctx.stroke()
 
@@ -619,19 +627,20 @@ function mountWoodBadge(canvas, opts) {
     renderer.setPixelRatio(Math.min(devicePixelRatio || 1, CFG.maxPixelRatio))
     camera.aspect = width / height
     if (widget) {
-      camera.fov = 35
-      const tan = Math.tan((35 * Math.PI / 180) / 2)
-      // 画布铺满首屏：木牌只占屏高 frac，牌下方留出整屏空间供拖拽甩动，永不裁切
-      const frac = camera.aspect < 0.8 ? 0.26 : 0.34
-      const halfH = CFG.plaqueH / frac / 2
-      const dist = Math.max(halfH, 1.95 / camera.aspect) / tan
+      camera.fov = 32
+      const tan = Math.tan((camera.fov * Math.PI / 180) / 2)
       const plaqueCenterY = CFG.anchor.y - CFG.ropeLength * (1 + CFG.ropeRestStretch) - CFG.eyeY
-      const camY = plaqueCenterY + CFG.plaqueH / 2 - 0.76 * halfH
+      const objectTop = CFG.anchor.y + .3
+      const objectBottom = plaqueCenterY - CFG.plaqueH / 2 - .72
+      const baseHalfH = (objectTop - objectBottom) * .5
+      const halfH = Math.max(baseHalfH, (CFG.plaqueW / 2 + .3) / camera.aspect)
+      const camY = (objectTop + objectBottom) * .5
+      const dist = halfH / tan
       cameraBase.set(0, camY, dist)
       camera.position.copy(cameraBase)
       lookTarget.set(0, camY, 0)
-      const marginX = CFG.plaqueW / 2 + .45, marginY = CFG.plaqueH / 2 + .45
-      viewLimits.maxX = Math.max(1.2, halfH * camera.aspect - marginX)
+      const marginX = CFG.plaqueW / 2 + .24, marginY = CFG.plaqueH / 2 + .24
+      viewLimits.maxX = Math.max(.25, halfH * camera.aspect - marginX)
       viewLimits.minY = camY - halfH + marginY
       viewLimits.maxY = Math.min(CFG.anchor.y - .3, camY + halfH - marginY)
     } else {
@@ -663,14 +672,14 @@ function mountWoodBadge(canvas, opts) {
     updatePlaqueMotion(dt, elapsed)
     const tensionRatio = clamp(cord.stretch / CFG.ropeVisualStretch, 0, 1)
     ropeMaterial.map.repeat.y = 12 / (1 + cord.stretch)
-    halo.material.uniforms.uStrength.value = (widget ? .1 : .13) + tensionRatio * .045
+    halo.material.uniforms.uStrength.value = (widget ? .052 : .13) + tensionRatio * .035
     if (backdrop) backdrop.material.uniforms.uTime.value = elapsed
     if (!prefersReducedMotion && !motion.dragging) {
       camera.position.x += (Math.sin(elapsed * .16) * .1 - camera.position.x) * .012
       camera.position.y += (cameraBase.y + Math.sin(elapsed * .2) * .05 - camera.position.y) * .012
       camera.lookAt(lookTarget)
       dust.rotation.y = elapsed * .006
-      warmLight.intensity = 17.5 + Math.sin(elapsed * .65) * 1.2
+      warmLight.intensity = (widget ? 12.5 : 17.5) + Math.sin(elapsed * .65) * (widget ? .7 : 1.2)
     }
     reportPlaqueBox()
     renderer.render(scene, camera)
