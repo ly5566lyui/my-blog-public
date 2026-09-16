@@ -12,6 +12,8 @@ function mountWoodBadge(canvas, opts) {
   const EYEBROW = o.eyebrow || 'MOSS & GRAIN'
   const onPick = typeof o.onPick === 'function' ? o.onPick : null
   const widget = o.widget !== false
+  const inputEl = o.eventSource || null
+  const onPlaqueBox = typeof o.onPlaqueBox === 'function' ? o.onPlaqueBox : null
   const prefersReducedMotion = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)').matches : false
   const clamp = THREE.MathUtils.clamp
 
@@ -52,8 +54,8 @@ function mountWoodBadge(canvas, opts) {
   }
 
   const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 80)
-  const cameraBase = new THREE.Vector3(0, widget ? 0.75 : 0.38, 14)
-  const lookTarget = new THREE.Vector3(0, widget ? 0.75 : 0.2, 0)
+  const cameraBase = new THREE.Vector3(0, widget ? -2.19 : 0.38, 14)
+  const lookTarget = new THREE.Vector3(0, widget ? -2.19 : 0.2, 0)
   camera.position.copy(cameraBase)
   camera.lookAt(lookTarget)
 
@@ -474,6 +476,7 @@ function mountWoodBadge(canvas, opts) {
       entry.leaf.rotation.y = Math.sin(elapsed * 1.35 + entry.phase) * .16
     })
   }/* Interaction ---------------------------------------------------------- */
+  const viewLimits = { maxX: 4.6, minY: -6.4, maxY: 4.05 }
   const motion = {
     angleZ: 0, velocityZ: 0, angleX: 0, velocityX: 0,
     flip: 0, flipTarget: 0, flipVelocity: 0,
@@ -486,8 +489,8 @@ function mountWoodBadge(canvas, opts) {
 
   function updatePointer(x, y) {
     const rect = canvas.getBoundingClientRect()
-    pointer.x = ((x - rect.left) / rect.width) * 2 - 1
-    pointer.y = -((y - rect.top) / rect.height) * 2 + 1
+    pointer.x = ((x - rect.left) / Math.max(1, rect.width)) * 2 - 1
+    pointer.y = -((y - rect.top) / Math.max(1, rect.height)) * 2 + 1
     raycaster.setFromCamera(pointer, camera)
   }
   function pickPlaque(x, y) {
@@ -512,26 +515,31 @@ function mountWoodBadge(canvas, opts) {
     dragPlane.setFromNormalAndCoplanarPoint(planeNormal.negate(), plaqueRig.position)
     updatePointer(event.clientX, event.clientY)
     if (raycaster.ray.intersectPlane(dragPlane, dragHit)) dragOffset.subVectors(plaqueRig.position, dragHit); else dragOffset.set(0, 0, 0)
-    canvas.setPointerCapture && canvas.setPointerCapture(event.pointerId)
-    canvas.style.cursor = 'grabbing'
+    eventTarget.style.cursor = 'grabbing'
     downPos = { x: event.clientX, y: event.clientY }; movedFar = false; downTime = performance.now()
     event.preventDefault()
   }
+  function hoverDrag(event) {
+    if (motion.dragging) return
+    const hit = pickPlaque(event.clientX, event.clientY)
+    motion.hoverTarget = hit ? 1 : 0
+    const el = inputEl || canvas
+    if (el.style) el.style.cursor = hit ? 'grab' : ''
+  }
   function moveDrag(event) {
-    if (!motion.dragging) {
-      const hit = pickPlaque(event.clientX, event.clientY)
-      motion.hoverTarget = hit ? 1 : 0
-      canvas.style.cursor = hit ? 'grab' : 'default'
-      return
-    }
+    if (!motion.dragging) return
     if (downPos && Math.hypot(event.clientX - downPos.x, event.clientY - downPos.y) > 6) movedFar = true
     updatePointer(event.clientX, event.clientY)
     if (!raycaster.ray.intersectPlane(dragPlane, dragHit)) return
     motion.dragPrevious.copy(motion.dragCenter)
     motion.dragCenter.copy(dragHit).add(dragOffset)
-    const xLimit = widget ? 3.2 : 5.3
-    motion.dragCenter.x = clamp(motion.dragCenter.x, -xLimit, xLimit)
-    motion.dragCenter.y = clamp(motion.dragCenter.y, -5.9, CFG.anchor.y - .3)
+    if (widget) {
+      motion.dragCenter.x = clamp(motion.dragCenter.x, -viewLimits.maxX, viewLimits.maxX)
+      motion.dragCenter.y = clamp(motion.dragCenter.y, viewLimits.minY, viewLimits.maxY)
+    } else {
+      motion.dragCenter.x = clamp(motion.dragCenter.x, -5.3, 5.3)
+      motion.dragCenter.y = clamp(motion.dragCenter.y, -5.9, CFG.anchor.y - .3)
+    }
     motion.dragCenter.z = clamp(motion.dragCenter.z, -3.6, 4.2)
     motion.dragVelocity.subVectors(motion.dragCenter, motion.dragPrevious).multiplyScalar(60)
   }
@@ -540,16 +548,17 @@ function mountWoodBadge(canvas, opts) {
     motion.dragging = false
     cord.kick(clamp(motion.dragVelocity.x, -12, 12), clamp(motion.dragVelocity.y, -8, 8), clamp(motion.dragVelocity.z, -8, 8))
     motion.velocityZ += clamp(-motion.dragVelocity.x * .036, -.46, .46)
-    canvas.releasePointerCapture && event.pointerId != null && canvas.releasePointerCapture(event.pointerId)
-    canvas.style.cursor = 'grab'
+    eventTarget.style.cursor = ''
     const quick = performance.now() - downTime < 450
     if (onPick && !movedFar && quick) onPick()
     downPos = null
   }
-  canvas.addEventListener('pointerdown', beginDrag, { passive: false })
-  canvas.addEventListener('pointermove', moveDrag)
-  canvas.addEventListener('pointerup', endDrag)
-  canvas.addEventListener('pointercancel', endDrag)
+  const eventTarget = inputEl || canvas
+  eventTarget.addEventListener('pointerdown', beginDrag, { passive: false })
+  eventTarget.addEventListener('pointermove', hoverDrag)
+  window.addEventListener('pointermove', moveDrag)
+  window.addEventListener('pointerup', endDrag)
+  window.addEventListener('pointercancel', endDrag)
 
   function spring(value, velocity, target, stiffness, damping, dt) {
     velocity += (target - value) * stiffness * dt
@@ -571,6 +580,7 @@ function mountWoodBadge(canvas, opts) {
     plaqueQuaternion.setFromEuler(euler)
     plaqueRig.quaternion.copy(plaqueQuaternion)
     plaqueCenterFromTip(plaqueRig.position)
+    if (widget) confinePlaque()
     motion.hover += (motion.hoverTarget - motion.hover) * (1 - Math.exp(-dt * 12))
     plaqueRig.scale.setScalar(1 + motion.hover * .018)
     woodMaterial.clearcoat = .16 + motion.hover * .12
@@ -580,6 +590,21 @@ function mountWoodBadge(canvas, opts) {
     if (!motion.dragging) return null
     eyeWorldOffset.set(0, CFG.eyeY, 0).applyQuaternion(plaqueRig.quaternion)
     return workTemp.copy(motion.dragCenter).add(eyeWorldOffset)
+  }
+  // 屏幕边界软约束：整块牌始终留在可视范围内，绝不会被甩出屏幕而"消失"
+  const confineShift = new THREE.Vector3()
+  function confinePlaque() {
+    const px = plaqueRig.position.x, py = plaqueRig.position.y
+    const cx = clamp(px, -viewLimits.maxX, viewLimits.maxX)
+    const cy = clamp(py, viewLimits.minY, viewLimits.maxY)
+    if (Math.abs(cx - px) < 1e-4 && Math.abs(cy - py) < 1e-4) return
+    confineShift.set(cx - px, cy - py, 0)
+    plaqueRig.position.add(confineShift)
+    cord.tip.add(confineShift)
+    const last = cord.previous[cord.count - 1]
+    if (last) last.add(confineShift)
+    motion.velocityZ *= .55
+    motion.velocityX *= .55
   }
 
   /* Loop --------------------------------------------------------------- */
@@ -595,16 +620,20 @@ function mountWoodBadge(canvas, opts) {
     camera.aspect = width / height
     if (widget) {
       camera.fov = 35
-      const tan = Math.tan((35 * Math.PI / 180) / 2) // ≈0.3153
-      // 以木牌为主体取景：点牌面占满画面，绳子顶端自然延伸出画，木牌不被压缩
-      const halfW = 2.0 // 牌宽 2.72/2 + 藤叶余量
-      const halfH = 2.6 // 牌高 3.82/2 + 上留绳头余量
-      const dist = Math.max(halfH / tan, halfW / (tan * camera.aspect)) + 0.35
-      cameraBase.z = dist
-      camera.position.z = dist
-      const targetY = 4.35 - 3.05 - 3.82 / 2 - 0.15 // 木牌中心 y ≈ 挂点 - 绳长 - 半牌高
-      cameraBase.y = targetY
-      lookTarget.y = targetY
+      const tan = Math.tan((35 * Math.PI / 180) / 2)
+      // 画布铺满首屏：木牌只占屏高 frac，牌下方留出整屏空间供拖拽甩动，永不裁切
+      const frac = camera.aspect < 0.8 ? 0.26 : 0.34
+      const halfH = CFG.plaqueH / frac / 2
+      const dist = Math.max(halfH, 1.95 / camera.aspect) / tan
+      const plaqueCenterY = CFG.anchor.y - CFG.ropeLength * (1 + CFG.ropeRestStretch) - CFG.eyeY
+      const camY = plaqueCenterY + CFG.plaqueH / 2 - 0.76 * halfH
+      cameraBase.set(0, camY, dist)
+      camera.position.copy(cameraBase)
+      lookTarget.set(0, camY, 0)
+      const marginX = CFG.plaqueW / 2 + .45, marginY = CFG.plaqueH / 2 + .45
+      viewLimits.maxX = Math.max(1.2, halfH * camera.aspect - marginX)
+      viewLimits.minY = camY - halfH + marginY
+      viewLimits.maxY = Math.min(CFG.anchor.y - .3, camY + halfH - marginY)
     } else {
       camera.fov = width / height < .72 ? 40 : width / height < 1 ? 38 : 35
       const dist = width / height < .72 ? 14.2 : width / height < 1 ? 14.2 : 13.7
@@ -643,7 +672,35 @@ function mountWoodBadge(canvas, opts) {
       dust.rotation.y = elapsed * .006
       warmLight.intensity = 17.5 + Math.sin(elapsed * .65) * 1.2
     }
+    reportPlaqueBox()
     renderer.render(scene, camera)
+  }
+  const boxCorners = []
+  for (let i = 0; i < 8; i++) boxCorners.push(new THREE.Vector3())
+  const lastBox = { x: 0, y: 0, w: 0, h: 0 }
+  function reportPlaqueBox() {
+    if (!onPlaqueBox) return
+    const hw = CFG.plaqueW / 2 + .34, hh = CFG.plaqueH / 2 + .34, hd = CFG.plaqueD / 2 + .2
+    const rect = canvas.getBoundingClientRect()
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, k = 0
+    for (let sx = -1; sx <= 1; sx += 2) for (let sy = -1; sy <= 1; sy += 2) for (let sz = -1; sz <= 1; sz += 2) {
+      const v = boxCorners[k++].set(sx * hw, sy * hh, sz * hd)
+      plaqueRig.localToWorld(v).project(camera)
+      if (!Number.isFinite(v.x) || !Number.isFinite(v.y)) return
+      const px = rect.left + (v.x * .5 + .5) * rect.width
+      const py = rect.top + (-v.y * .5 + .5) * rect.height
+      if (px < minX) minX = px; if (px > maxX) maxX = px
+      if (py < minY) minY = py; if (py > maxY) maxY = py
+    }
+    const pad = 10
+    const box = {
+      x: Math.round(minX - pad), y: Math.round(minY - pad),
+      w: Math.round(maxX - minX + pad * 2), h: Math.round(maxY - minY + pad * 2)
+    }
+    if (Math.abs(box.x - lastBox.x) < 1 && Math.abs(box.y - lastBox.y) < 1 &&
+      Math.abs(box.w - lastBox.w) < 1 && Math.abs(box.h - lastBox.h) < 1) return
+    lastBox.x = box.x; lastBox.y = box.y; lastBox.w = box.w; lastBox.h = box.h
+    onPlaqueBox(box)
   }
 
   resize()
@@ -674,10 +731,11 @@ function mountWoodBadge(canvas, opts) {
       renderer.setAnimationLoop(null)
       document.removeEventListener('visibilitychange', onVis)
       if (ro) ro.disconnect(); else removeEventListener('resize', resize)
-      canvas.removeEventListener('pointerdown', beginDrag)
-      canvas.removeEventListener('pointermove', moveDrag)
-      canvas.removeEventListener('pointerup', endDrag)
-      canvas.removeEventListener('pointercancel', endDrag)
+      eventTarget.removeEventListener('pointerdown', beginDrag)
+      eventTarget.removeEventListener('pointermove', hoverDrag)
+      window.removeEventListener('pointermove', moveDrag)
+      window.removeEventListener('pointerup', endDrag)
+      window.removeEventListener('pointercancel', endDrag)
       renderer.dispose()
     },
   }
