@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { BookOpenText, RotateCcw, Sparkles } from 'lucide-react'
+import { BookOpenText, NotebookPen, RotateCcw } from 'lucide-react'
 
 type BadgeApi = {
 	pulse: () => void
@@ -85,8 +85,7 @@ export default function SwingSign() {
 				if (typeof mount !== 'function') throw new Error('mountWoodBadge 未注册')
 				const api = mount(canvas, {
 					widget: true,
-					eventSource: canvas,
-					onPick: () => router.push('/blog')
+					eventSource: canvas
 				})
 				if (!api) throw new Error('木牌初始化失败')
 				apiRef.current = api
@@ -113,21 +112,17 @@ export default function SwingSign() {
 
 	return (
 		<section
-			aria-label='藤蔓木牌：随心记入口'
+			aria-label='藤蔓木牌与页面入口'
 			className='group relative z-20 h-[430px] w-[min(92vw,360px)] shrink-0 overflow-visible sm:fixed sm:top-1/2 sm:right-auto sm:bottom-auto sm:left-4 sm:h-[390px] sm:w-[204px] sm:-translate-y-1/2 xl:left-3 xl:h-[410px] xl:w-[208px]'>
-
 			{failed ? (
-				<button
-					type='button'
-					onClick={() => router.push('/blog')}
-					className='absolute inset-5 flex flex-col items-center justify-center gap-3 rounded-[28px] border border-white/50 bg-white/25 text-center text-sm text-[#40584b]'>
-					<BookOpenText aria-hidden='true' className='h-6 w-6' />
-					<span>进入随心记</span>
-				</button>
+				<div className='absolute inset-5 flex flex-col items-center justify-center gap-3 rounded-[28px] border border-white/50 bg-white/25 text-center text-sm text-[#40584b]'>
+					<NotebookPen aria-hidden='true' className='h-6 w-6' />
+					<span>木牌暂时没能显示</span>
+				</div>
 			) : (
 				<canvas
 					ref={canvasRef}
-					aria-label='可拖拽、可翻面的藤蔓木牌；点击进入随心记'
+					aria-label='可拖拽的藤蔓木牌'
 					className='block h-full w-full touch-none transition-opacity duration-700'
 					style={{ opacity: ready ? 1 : 0 }}
 				/>
@@ -136,17 +131,17 @@ export default function SwingSign() {
 			<div className='absolute inset-x-3 bottom-3 z-20 flex items-center justify-center gap-2 px-1.5'>
 				<button
 					type='button'
-					onClick={() => apiRef.current?.pulse()}
+					onClick={() => router.push('/blog')}
 					className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/60 bg-[#f7f3e8]/82 text-[#4c654c] shadow-[0_8px_20px_-12px_rgba(43,65,42,0.8)] backdrop-blur-md transition-[background-color,color,transform] hover:-translate-y-0.5 hover:bg-white/90 hover:text-[#304b37] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#55784e]'
-					aria-label='轻弹木牌'>
-					<Sparkles aria-hidden='true' className='h-4 w-4' />
+					aria-label='进入随心记'>
+					<BookOpenText aria-hidden='true' className='h-4 w-4' />
 				</button>
 				<button
 					type='button'
-					onClick={() => router.push('/blog')}
+					onClick={() => router.push('/diary')}
 					className='flex h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full bg-[#3f6248] px-3 text-xs font-medium tracking-wide text-[#fffdf6] shadow-[0_6px_18px_-10px_rgba(39,70,47,0.9)] transition-[background-color,transform] hover:-translate-y-0.5 hover:bg-[#31543c] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#55784e]'>
-					<BookOpenText aria-hidden='true' className='h-4 w-4' />
-					随心记
+					<NotebookPen aria-hidden='true' className='h-4 w-4' />
+					日记
 				</button>
 				<button
 					type='button'
@@ -159,3 +154,4 @@ export default function SwingSign() {
 		</section>
 	)
 }
+
