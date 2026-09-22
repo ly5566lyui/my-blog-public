@@ -12,6 +12,13 @@ import { pushDiaryEntries } from './services/push-diary-entries'
 import type { DiaryEntry } from './types'
 
 const STORAGE_KEY = 'senyu-diary-entries-v1'
+function persistDraft(entries: DiaryEntry[]) {
+	try {
+		window.localStorage.setItem(STORAGE_KEY, JSON.stringify(entries))
+	} catch (error) {
+		console.error('[Diary] 保存草稿失败', error)
+	}
+}
 const moods = ['平静', '开心', '期待', '怀念', '有点累']
 type AuthStatus = 'checking' | 'idle' | 'validating' | 'authenticated'
 
@@ -76,9 +83,13 @@ export default function DiaryBook() {
 		const publishedEntries = initialEntries as DiaryEntry[]
 		try {
 			const legacyEntries = window.localStorage.getItem(STORAGE_KEY)
-			const nextEntries = publishedEntries.length === 0 && legacyEntries ? (JSON.parse(legacyEntries) as DiaryEntry[]) : publishedEntries
-			setEntries(nextEntries)
-			setOriginalEntries(nextEntries)
+			let loaded = publishedEntries
+			if (legacyEntries) {
+				const parsed = JSON.parse(legacyEntries) as DiaryEntry[]
+				if (Array.isArray(parsed) && parsed.length > 0) loaded = parsed
+			}
+			setEntries(loaded)
+			setOriginalEntries(loaded)
 		} catch (error) {
 			console.error('[Diary] 读取本地日记失败', error)
 		} finally {
@@ -140,22 +151,25 @@ export default function DiaryBook() {
 		}
 
 		const now = new Date().toISOString()
+		let next: DiaryEntry[]
 		if (editingId) {
-			setEntries(current =>
-				current.map(entry => (entry.id === editingId ? { ...entry, title: title.trim(), content: cleanContent, mood, updatedAt: now } : entry))
-			)
+			next = entries.map(entry => (entry.id === editingId ? { ...entry, title: title.trim(), content: cleanContent, mood, updatedAt: now } : entry))
 			toast.success('日记已更新')
 		} else {
-			setEntries(current => [...current, { id: createId(), title: title.trim(), content: cleanContent, mood, createdAt: now, updatedAt: now }])
+			next = [...entries, { id: createId(), title: title.trim(), content: cleanContent, mood, createdAt: now, updatedAt: now }]
 			toast.success('这一页已收好')
 		}
+		setEntries(next)
+		persistDraft(next)
 		closeEditor()
 	}
 
 	const deleteEntry = (entry: DiaryEntry) => {
 		requireAuth(() => {
 			if (!window.confirm(`确定删除“${entry.title || '无题日记'}”吗？`)) return
-			setEntries(current => current.filter(item => item.id !== entry.id))
+			const next = entries.filter(item => item.id !== entry.id)
+			setEntries(next)
+			persistDraft(next)
 			toast.success('已从草稿中删除，发布后生效')
 		})
 	}
