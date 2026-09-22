@@ -179,7 +179,15 @@ export default function DiaryBook() {
 	}
 
 	const cancelManageMode = () => {
-		setEntries(originalEntries)
+		try {
+			const legacyEntries = window.localStorage.getItem(STORAGE_KEY)
+			if (legacyEntries) {
+				const parsed = JSON.parse(legacyEntries) as DiaryEntry[]
+				if (Array.isArray(parsed) && parsed.length > 0) setEntries(parsed)
+			}
+		} catch {
+			setEntries(originalEntries)
+		}
 		setManageMode(false)
 		closeEditor()
 	}
@@ -191,7 +199,7 @@ export default function DiaryBook() {
 			setOriginalEntries(entries)
 			setManageMode(false)
 			closeEditor()
-			window.localStorage.removeItem(STORAGE_KEY)
+			persistDraft(entries)
 			toast.success('日记已发布，部署完成后访客即可看到')
 		} catch (error) {
 			console.error('[Diary] 发布失败', error)
