@@ -86,7 +86,13 @@ export default function DiaryBook() {
 			let loaded = publishedEntries
 			if (legacyEntries) {
 				const parsed = JSON.parse(legacyEntries) as DiaryEntry[]
-				if (Array.isArray(parsed) && parsed.length > 0) loaded = parsed
+				if (Array.isArray(parsed) && parsed.length > 0) {
+					const newestDraft = Math.max(...parsed.map(item => new Date(item.updatedAt).getTime()))
+					const external = publishedEntries.filter(
+						item => !parsed.some(draft => draft.id === item.id) && new Date(item.createdAt).getTime() > newestDraft
+					)
+					loaded = [...parsed, ...external]
+				}
 			}
 			setEntries(loaded)
 			setOriginalEntries(loaded)
