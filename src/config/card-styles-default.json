@@ -104,5 +104,13 @@
 		"offsetX": null,
 		"offsetY": null,
 		"enabled": false
+	},
+	"swingSign": {
+		"width": 208,
+		"height": 410,
+		"order": 9,
+		"offsetX": null,
+		"offsetY": null,
+		"enabled": true
 	}
 }

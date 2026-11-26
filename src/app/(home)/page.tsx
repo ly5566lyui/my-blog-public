@@ -78,8 +78,8 @@ export default function Home() {
 
 			<div className='max-sm:flex max-sm:flex-col max-sm:items-center max-sm:gap-6 max-sm:pt-28 max-sm:pb-20'>
 				{cardStyles.artCard?.enabled !== false && <ArtCard />}
-				<SwingSign />
 				{cardStyles.hiCard?.enabled !== false && <HiCard />}
+				{cardStyles.swingSign?.enabled !== false && <SwingSign />}
 				{!maxSM && cardStyles.clockCard?.enabled !== false && <ClockCard />}
 				{!maxSM && cardStyles.calendarCard?.enabled !== false && <CalendarCard />}
 				{cardStyles.socialButtons?.enabled !== false && <SocialButtons />}
