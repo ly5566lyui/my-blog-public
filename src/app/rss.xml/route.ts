@@ -5,7 +5,8 @@ import siteContent from '@/config/site-content.json'
 import blogIndex from '@/../public/blogs/index.json'
 import type { BlogIndexItem } from '@/app/blog/types'
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.yysuni.com'
+const SITE_URL =
+	process.env.NEXT_PUBLIC_SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:2025')
 const FEED_PATH = '/rss.xml'
 const SITE_ORIGIN = SITE_URL.replace(/\/$/, '')
 const FEED_URL = `${SITE_ORIGIN}${FEED_PATH}`
@@ -90,8 +91,8 @@ export const dynamic = 'force-static'
 export const revalidate = false
 
 export function GET(): Response {
-	const title = siteContent.meta?.title || '2025 Blog'
-	const description = siteContent.meta?.description || 'Latest updates from 2025 Blog'
+	const title = siteContent.meta?.title || "MCY's Blog"
+	const description = siteContent.meta?.description || "Latest updates from MCY's Blog"
 
 	const items = blogs
 		.filter(item => item?.slug)
