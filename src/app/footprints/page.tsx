@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Compass, Globe, KeyRound, LoaderCircle, MapPin, Pencil, Plus, Save, Trash2 } from 'lucide-react'
+import { Compass, Globe, KeyRound, LoaderCircle, MapPin, Pencil, Plus, Save, Search, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import dayjs from 'dayjs'
 import { DialogModal } from '@/components/dialog-modal'
@@ -71,6 +71,58 @@ function project(lat: number, lng: number, mode: 'china' | 'world') {
 	return { x, y }
 }
 
+function unproject(x: number, y: number, mode: 'china' | 'world') {
+	const b = mode === 'china' ? CHINA_BOUNDS : WORLD_BOUNDS
+	const lng = b.minLng + (x / 800) * (b.maxLng - b.minLng)
+	const lat = b.maxLat - (y / 460) * (b.maxLat - b.minLat)
+	return { lat: Number(lat.toFixed(4)), lng: Number(lng.toFixed(4)) }
+}
+
+type GeoCandidate = {
+	displayName: string
+	city: string
+	region: string
+	country: string
+	lat: number
+	lng: number
+}
+
+async function geocodeCity(query: string): Promise<GeoCandidate[]> {
+	const res = await fetch(
+		`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&accept-language=zh-CN&limit=5&q=${encodeURIComponent(query)}`
+	)
+	if (!res.ok) throw new Error(`定位服务暂不可用 (${res.status})`)
+	const rows = (await res.json()) as Array<{
+		display_name: string
+		lat: string
+		lon: string
+		name?: string
+		address?: {
+			city?: string
+			town?: string
+			county?: string
+			municipality?: string
+			state?: string
+			province?: string
+			country?: string
+		}
+	}>
+	return rows.map(r => {
+		const addr = r.address ?? {}
+		const cityName = addr.city || addr.town || addr.county || addr.municipality || r.name || query
+		const regionName = addr.state || addr.province || cityName
+		const countryName = addr.country || '中国'
+		return {
+			displayName: r.display_name,
+			city: cityName,
+			region: regionName,
+			country: countryName,
+			lat: Number(Number(r.lat).toFixed(4)),
+			lng: Number(Number(r.lon).toFixed(4))
+		}
+	})
+}
+
 function inBounds(lat: number, lng: number, mode: 'china' | 'world') {
 	const b = mode === 'china' ? CHINA_BOUNDS : WORLD_BOUNDS
 	return lng >= b.minLng && lng <= b.maxLng && lat >= b.minLat && lat <= b.maxLat
@@ -92,11 +144,14 @@ export default function FootprintsPage() {
 	const [city, setCity] = useState('')
 	const [region, setRegion] = useState('')
 	const [country, setCountry] = useState('中国')
-	const [lat, setLat] = useState('30.5728')
-	const [lng, setLng] = useState('104.0668')
+	const [lat, setLat] = useState('')
+	const [lng, setLng] = useState('')
 	const [status, setStatus] = useState<FootprintStatus>('visited')
 	const [date, setDate] = useState(dayjs().format('YYYY-MM'))
 	const [note, setNote] = useState('')
+	const [locating, setLocating] = useState(false)
+	const [geoCandidates, setGeoCandidates] = useState<GeoCandidate[]>([])
+	const [showAdvancedCoords, setShowAdvancedCoords] = useState(false)
 
 	const selectedItem = useMemo(() => items.find(i => i.id === selectedId) ?? items[0] ?? null, [items, selectedId])
 
@@ -116,16 +171,18 @@ export default function FootprintsPage() {
 		return { diaries, pictures }
 	}, [selectedItem])
 
-	const openCreate = () => {
+	const openCreate = (presetCoords?: { lat: number; lng: number }) => {
 		setEditingId(null)
 		setCity('')
 		setRegion('')
 		setCountry('中国')
-		setLat('30.5728')
-		setLng('104.0668')
+		setLat(presetCoords ? String(presetCoords.lat) : '')
+		setLng(presetCoords ? String(presetCoords.lng) : '')
 		setStatus('visited')
 		setDate(dayjs().format('YYYY-MM'))
 		setNote('')
+		setGeoCandidates([])
+		setShowAdvancedCoords(false)
 		setDialogOpen(true)
 	}
 
@@ -139,6 +196,8 @@ export default function FootprintsPage() {
 		setStatus(item.status)
 		setDate(item.date)
 		setNote(item.note)
+		setGeoCandidates([])
+		setShowAdvancedCoords(false)
 		setDialogOpen(true)
 	}
 
@@ -150,29 +209,110 @@ export default function FootprintsPage() {
 		setCountry(found.country)
 		setLat(String(found.lat))
 		setLng(String(found.lng))
+		setGeoCandidates([])
 	}
 
-	const handleSaveDraft = () => {
-		const latNum = Number(lat)
-		const lngNum = Number(lng)
-		if (!city.trim() || !Number.isFinite(latNum) || !Number.isFinite(lngNum)) {
-			toast.error('请填写城市名称和有效经纬度')
+	const applyCandidate = (c: GeoCandidate) => {
+		setCity(c.city)
+		setRegion(c.region)
+		setCountry(c.country)
+		setLat(String(c.lat))
+		setLng(String(c.lng))
+		setGeoCandidates([])
+		toast.success(`已自动定位：${c.city}（${c.region}）`)
+	}
+
+	const handleSearchLocation = async () => {
+		const q = city.trim()
+		if (!q) {
+			toast.error('先输入城市或地名再点搜索')
 			return
 		}
+		// 优先匹配内置城市，0 延迟秒出结果
+		const localHit = CITY_PRESETS.find(c => c.city === q || q.includes(c.city))
+		if (localHit) {
+			setCity(localHit.city)
+			setRegion(localHit.region)
+			setCountry(localHit.country)
+			setLat(String(localHit.lat))
+			setLng(String(localHit.lng))
+			setGeoCandidates([])
+			toast.success(`已定位：${localHit.city}（${localHit.region}）`)
+			return
+		}
+		setLocating(true)
+		try {
+			const list = await geocodeCity(q)
+			if (list.length === 0) {
+				toast.error(`没找到「${q}」，可以换个更完整的地名试试`)
+				setGeoCandidates([])
+			} else if (list.length === 1) {
+				applyCandidate(list[0])
+			} else {
+				setGeoCandidates(list)
+			}
+		} catch (error: any) {
+			toast.error(error?.message || '自动定位失败，可以直接在地图上点击选点')
+		} finally {
+			setLocating(false)
+		}
+	}
+
+	const handleSaveDraft = async () => {
+		const cleanCity = city.trim()
+		if (!cleanCity) {
+			toast.error('请填写城市名称')
+			return
+		}
+
+		let latNum = Number(lat)
+		let lngNum = Number(lng)
+		let finalRegion = region.trim()
+		let finalCountry = country.trim() || '中国'
+
+		// 如果用户没填经纬度，自动查内置表或在线地理编码
+		if (!lat.trim() || !lng.trim() || !Number.isFinite(latNum) || !Number.isFinite(lngNum)) {
+			const localHit = CITY_PRESETS.find(c => c.city === cleanCity || cleanCity.includes(c.city))
+			if (localHit) {
+				latNum = localHit.lat
+				lngNum = localHit.lng
+				finalRegion = finalRegion || localHit.region
+				finalCountry = localHit.country
+			} else {
+				setLocating(true)
+				try {
+					const list = await geocodeCity(cleanCity)
+					if (list.length === 0) {
+						toast.error(`没查到「${cleanCity}」的位置，可以点「搜索定位」换个地名，或在地图上直接点选`)
+						return
+					}
+					latNum = list[0].lat
+					lngNum = list[0].lng
+					finalRegion = finalRegion || list[0].region
+					finalCountry = list[0].country
+				} catch {
+					toast.error('自动定位暂时不可用，可以在地图上直接点击选点')
+					return
+				} finally {
+					setLocating(false)
+				}
+			}
+		}
+
 		if (editingId) {
 			setItems(prev =>
 				prev.map(i =>
 					i.id === editingId
-						? { ...i, city: city.trim(), region: region.trim(), country: country.trim(), lat: latNum, lng: lngNum, status, date, note: note.trim() }
+						? { ...i, city: cleanCity, region: finalRegion || cleanCity, country: finalCountry, lat: latNum, lng: lngNum, status, date, note: note.trim() }
 						: i
 				)
 			)
 		} else {
 			const created: FootprintItem = {
 				id: `fp-${Date.now().toString(36)}`,
-				city: city.trim(),
-				region: region.trim(),
-				country: country.trim(),
+				city: cleanCity,
+				region: finalRegion || cleanCity,
+				country: finalCountry,
 				lat: latNum,
 				lng: lngNum,
 				status,
@@ -275,7 +415,7 @@ export default function FootprintsPage() {
 									className='rounded-xl border bg-white/65 px-3.5 py-2 text-xs font-medium'>
 									取消
 								</button>
-								<button type='button' onClick={openCreate} className='inline-flex items-center gap-1 rounded-xl border bg-white/80 px-3.5 py-2 text-xs font-medium'>
+								<button type='button' onClick={() => openCreate()} className='inline-flex items-center gap-1 rounded-xl border bg-white/80 px-3.5 py-2 text-xs font-medium'>
 									<Plus className='h-3.5 w-3.5' />
 									点亮新城市
 								</button>
@@ -311,7 +451,17 @@ export default function FootprintsPage() {
 				{/* 地图 + 城市详情 */}
 				<div className='grid gap-5 lg:grid-cols-[1.6fr_1fr]'>
 					<div className='relative overflow-hidden rounded-[32px] border bg-white/65 p-4 shadow-sm backdrop-blur-md'>
-						<svg viewBox='0 0 800 460' className='h-auto w-full rounded-2xl bg-gradient-to-br from-[#e8f6f3] via-[#f2f8f7] to-[#e6f1f6]'>
+						<svg
+							viewBox='0 0 800 460'
+							onClick={e => {
+								if (!isEditMode) return
+								const rect = e.currentTarget.getBoundingClientRect()
+								const svgX = ((e.clientX - rect.left) / rect.width) * 800
+								const svgY = ((e.clientY - rect.top) / rect.height) * 460
+								const coords = unproject(svgX, svgY, mapMode)
+								openCreate(coords)
+							}}
+							className={`h-auto w-full rounded-2xl bg-gradient-to-br from-[#e8f6f3] via-[#f2f8f7] to-[#e6f1f6] ${isEditMode ? 'cursor-crosshair' : ''}`}>
 							{/* 经纬网格 */}
 							{Array.from({ length: 9 }).map((_, i) => (
 								<line key={`v-${i}`} x1={(i + 1) * 80} y1={0} x2={(i + 1) * 80} y2={460} stroke='#334f52' strokeOpacity={0.07} strokeDasharray='4 4' />
@@ -349,7 +499,13 @@ export default function FootprintsPage() {
 									const meta = STATUS_META[item.status]
 									const isSelected = selectedItem?.id === item.id
 									return (
-										<g key={item.id} onClick={() => setSelectedId(item.id)} className='cursor-pointer'>
+										<g
+											key={item.id}
+											onClick={e => {
+												e.stopPropagation()
+												setSelectedId(item.id)
+											}}
+											className='cursor-pointer'>
 											<circle cx={x} cy={y} r={isSelected ? 18 : 12} fill={meta.color} fillOpacity={0.22}>
 												<animate attributeName='r' values='10;20;10' dur='2.6s' repeatCount='indefinite' />
 												<animate attributeName='fill-opacity' values='0.32;0.06;0.32' dur='2.6s' repeatCount='indefinite' />
@@ -372,7 +528,7 @@ export default function FootprintsPage() {
 									</span>
 								))}
 							</div>
-							<span>点击地图上的发光城市点查看回忆</span>
+							<span>{isEditMode ? '管理模式：直接点击地图任意位置即可快速标点' : '点击地图上的发光城市点查看回忆'}</span>
 						</div>
 					</div>
 
@@ -467,29 +623,59 @@ export default function FootprintsPage() {
 				<h3 className='mb-4 text-base font-semibold'>{editingId ? '编辑足迹' : '点亮新城市'}</h3>
 				<div className='space-y-3 text-xs'>
 					<div>
-						<label className='text-secondary mb-1 block'>快速选择常用城市（自动填坐标）</label>
+						<label className='text-secondary mb-1 block'>输入任意城市或地名（自动查坐标，无需手填经纬度）</label>
+						<div className='flex gap-2'>
+							<input
+								value={city}
+								onChange={e => setCity(e.target.value)}
+								onKeyDown={e => {
+									if (e.key === 'Enter') {
+										e.preventDefault()
+										void handleSearchLocation()
+									}
+								}}
+								placeholder='例如：乐山、京都、大理、三亚...'
+								className='flex-1 rounded-xl border bg-white/80 px-3 py-2 text-sm'
+							/>
+							<button
+								type='button'
+								onClick={() => void handleSearchLocation()}
+								disabled={locating}
+								className='inline-flex items-center gap-1 rounded-xl border bg-white/80 px-3 py-2 font-medium hover:bg-white disabled:opacity-60'>
+								{locating ? <LoaderCircle className='h-3.5 w-3.5 animate-spin' /> : <Search className='text-brand h-3.5 w-3.5' />}
+								自动定位
+							</button>
+						</div>
+					</div>
+
+					{geoCandidates.length > 0 && (
+						<div className='space-y-1 rounded-2xl border bg-white/70 p-2'>
+							<div className='text-secondary px-1 text-[11px]'>选择匹配的地点：</div>
+							{geoCandidates.map((c, idx) => (
+								<button
+									key={idx}
+									type='button'
+									onClick={() => applyCandidate(c)}
+									className='block w-full truncate rounded-xl px-2.5 py-1.5 text-left text-xs hover:bg-brand/10'>
+									📍 {c.city} · <span className='text-secondary'>{c.displayName}</span>
+								</button>
+							))}
+						</div>
+					)}
+
+					<div>
+						<label className='text-secondary mb-1 block'>或直接点选常用城市</label>
 						<select
 							defaultValue=''
 							onChange={e => applyPreset(e.target.value)}
 							className='w-full rounded-xl border bg-white/80 px-3 py-2 text-xs'>
-							<option value=''>-- 从内置 30 个热门城市选择 --</option>
+							<option value=''>-- 从内置 30 个热门城市快速选择 --</option>
 							{CITY_PRESETS.map(c => (
 								<option key={c.city} value={c.city}>
 									{c.city}（{c.country} · {c.region}）
 								</option>
 							))}
 						</select>
-					</div>
-
-					<div className='grid grid-cols-3 gap-2'>
-						<input value={city} onChange={e => setCity(e.target.value)} placeholder='城市 *' className='rounded-xl border bg-white/80 px-3 py-2' />
-						<input value={region} onChange={e => setRegion(e.target.value)} placeholder='省份/地区' className='rounded-xl border bg-white/80 px-3 py-2' />
-						<input value={country} onChange={e => setCountry(e.target.value)} placeholder='国家' className='rounded-xl border bg-white/80 px-3 py-2' />
-					</div>
-
-					<div className='grid grid-cols-2 gap-2'>
-						<input value={lat} onChange={e => setLat(e.target.value)} placeholder='纬度 lat' className='rounded-xl border bg-white/80 px-3 py-2' />
-						<input value={lng} onChange={e => setLng(e.target.value)} placeholder='经度 lng' className='rounded-xl border bg-white/80 px-3 py-2' />
 					</div>
 
 					<div className='grid grid-cols-2 gap-2'>
@@ -502,14 +688,32 @@ export default function FootprintsPage() {
 					</div>
 
 					<textarea value={note} onChange={e => setNote(e.target.value)} rows={3} placeholder='写一句对这座城市的印象或故事...' className='w-full rounded-xl border bg-white/80 px-3 py-2' />
+
+					<div className='pt-1'>
+						<button
+							type='button'
+							onClick={() => setShowAdvancedCoords(v => !v)}
+							className='text-secondary text-[11px] underline-offset-2 hover:underline'>
+							{showAdvancedCoords ? '收起高级选项' : lat && lng ? `已定位坐标 (${lat}, ${lng}) · 手动微调` : '高级：手动填写省份/坐标（一般无需填写）'}
+						</button>
+						{showAdvancedCoords && (
+							<div className='mt-2 grid grid-cols-2 gap-2'>
+								<input value={region} onChange={e => setRegion(e.target.value)} placeholder='省份/地区' className='rounded-xl border bg-white/80 px-3 py-2' />
+								<input value={country} onChange={e => setCountry(e.target.value)} placeholder='国家' className='rounded-xl border bg-white/80 px-3 py-2' />
+								<input value={lat} onChange={e => setLat(e.target.value)} placeholder='纬度 lat（可选）' className='rounded-xl border bg-white/80 px-3 py-2' />
+								<input value={lng} onChange={e => setLng(e.target.value)} placeholder='经度 lng（可选）' className='rounded-xl border bg-white/80 px-3 py-2' />
+							</div>
+						)}
+					</div>
 				</div>
 
 				<div className='mt-5 flex justify-end gap-2'>
 					<button type='button' onClick={() => setDialogOpen(false)} className='rounded-xl border bg-white/60 px-4 py-2 text-xs'>
 						取消
 					</button>
-					<button type='button' onClick={handleSaveDraft} className='brand-btn px-4 py-2 text-xs'>
-						确定
+					<button type='button' onClick={() => void handleSaveDraft()} disabled={locating} className='brand-btn px-4 py-2 text-xs disabled:opacity-60'>
+						{locating ? <LoaderCircle className='h-3.5 w-3.5 animate-spin' /> : null}
+						{locating ? '定位中...' : '确定'}
 					</button>
 				</div>
 			</DialogModal>
