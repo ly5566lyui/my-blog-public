@@ -19,7 +19,7 @@ const CARD_LABELS: Record<string, string> = {
 	likePosition: '点赞',
 	hatCard: '帽子',
 	beianCard: '备案',
-	swingSign: '木牌'
+	diaryCard: '日记'
 }
 
 interface HomeLayoutProps {

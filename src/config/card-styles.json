@@ -105,9 +105,9 @@
 		"offsetY": null,
 		"enabled": false
 	},
-	"swingSign": {
-		"width": 208,
-		"height": 410,
+	"diaryCard": {
+		"width": 293,
+		"height": 140,
 		"order": 9,
 		"offsetX": null,
 		"offsetY": null,
