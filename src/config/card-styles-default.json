@@ -1,10 +1,10 @@
 {
 	"artCard": {
 		"width": 360,
-		"height": 196,
+		"height": 200,
 		"order": 3,
 		"offsetX": -180,
-		"offsetY": -364,
+		"offsetY": -380,
 		"enabled": true
 	},
 	"hiCard": {
@@ -16,77 +16,77 @@
 		"enabled": true
 	},
 	"clockCard": {
-		"width": 330,
-		"height": 134,
+		"width": 236,
+		"height": 132,
 		"offset": 92,
 		"order": 4,
-		"offsetX": 204,
-		"offsetY": -302,
+		"offsetX": 212,
+		"offsetY": -286,
 		"enabled": true
 	},
 	"calendarCard": {
-		"width": 330,
-		"height": 288,
+		"width": 348,
+		"height": 286,
 		"order": 5,
-		"offsetX": 204,
-		"offsetY": -144,
+		"offsetX": 220,
+		"offsetY": -136,
 		"enabled": true
 	},
 	"musicCard": {
-		"width": 330,
+		"width": 296,
 		"height": 66,
 		"offset": 120,
 		"order": 6,
-		"offsetX": 204,
-		"offsetY": 168,
+		"offsetX": 248,
+		"offsetY": 178,
 		"enabled": true
 	},
 	"socialButtons": {
-		"width": 360,
+		"width": 315,
 		"height": 48,
 		"order": 6,
-		"offsetX": -180,
-		"offsetY": 168,
+		"offsetX": -158,
+		"offsetY": 174,
 		"enabled": true
 	},
 	"shareCard": {
-		"width": 276,
-		"height": 156,
+		"width": 200,
+		"height": 172,
 		"order": 7,
-		"offsetX": -180,
-		"offsetY": 236,
+		"offsetX": -162,
+		"offsetY": 244,
 		"enabled": true
 	},
 	"articleCard": {
-		"width": 280,
-		"height": 224,
+		"width": 260,
+		"height": 160,
 		"order": 8,
-		"offsetX": -484,
-		"offsetY": 168,
+		"offsetX": -468,
+		"offsetY": 204,
 		"enabled": true
 	},
 	"writeButtons": {
 		"height": 42,
 		"width": 180,
 		"order": 8,
-		"offsetX": 204,
-		"offsetY": -364,
+		"offsetX": 224,
+		"offsetY": -346,
 		"enabled": true
 	},
 	"navCard": {
-		"width": 280,
-		"height": 508,
+		"width": 272,
+		"height": 440,
 		"order": 2,
-		"offsetX": -484,
-		"offsetY": -364,
+		"offsetX": -488,
+		"offsetY": -270,
 		"enabled": true
 	},
 	"likePosition": {
 		"width": 54,
 		"height": 54,
 		"order": 8,
-		"offsetX": 118,
-		"offsetY": 287,
+		"offsetX": 78,
+		"offsetY": 292,
 		"enabled": true
 	},
 	"hatCard": {
@@ -106,11 +106,11 @@
 		"enabled": false
 	},
 	"diaryCard": {
-		"width": 330,
-		"height": 138,
+		"width": 280,
+		"height": 134,
 		"order": 9,
-		"offsetX": 204,
-		"offsetY": 254,
+		"offsetX": 224,
+		"offsetY": 266,
 		"enabled": true
 	}
 }
