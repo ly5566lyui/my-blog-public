@@ -7,25 +7,28 @@ import { DialogModal } from '@/components/dialog-modal'
 import { useAuthStore } from '@/hooks/use-auth'
 import { useConfigStore } from '../stores/config-store'
 import { pushSiteContent } from '../services/push-site-content'
-import type { SiteContent, CardStyles } from '../stores/config-store'
+import type { SiteContent, CardStyles, NavItemConfig } from '../stores/config-store'
 import { SiteSettings, type FileItem, type ArtImageUploads, type BackgroundImageUploads, type SocialButtonImageUploads } from './site-settings'
 import { ColorConfig } from './color-config'
 import { HomeLayout } from './home-layout'
+import { NavConfig } from './nav-config'
 
 interface ConfigDialogProps {
 	open: boolean
 	onClose: () => void
 }
 
-type TabType = 'site' | 'color' | 'layout'
+type TabType = 'site' | 'color' | 'layout' | 'nav'
 
 export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 	const { isAuth, setPrivateKey } = useAuthStore()
-	const { siteContent, setSiteContent, cardStyles, setCardStyles, regenerateBubbles } = useConfigStore()
+	const { siteContent, setSiteContent, cardStyles, setCardStyles, navItems, setNavItems, regenerateBubbles } = useConfigStore()
 	const [formData, setFormData] = useState<SiteContent>(siteContent)
 	const [cardStylesData, setCardStylesData] = useState<CardStyles>(cardStyles)
+	const [navItemsData, setNavItemsData] = useState<NavItemConfig[]>(navItems)
 	const [originalData, setOriginalData] = useState<SiteContent>(siteContent)
 	const [originalCardStyles, setOriginalCardStyles] = useState<CardStyles>(cardStyles)
+	const [originalNavItems, setOriginalNavItems] = useState<NavItemConfig[]>(navItems)
 	const [isSaving, setIsSaving] = useState(false)
 	const [activeTab, setActiveTab] = useState<TabType>('site')
 	const keyInputRef = useRef<HTMLInputElement>(null)
@@ -39,10 +42,13 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		if (open) {
 			const current = { ...siteContent }
 			const currentCardStyles = { ...cardStyles }
+			const currentNavItems = [...navItems]
 			setFormData(current)
 			setCardStylesData(currentCardStyles)
+			setNavItemsData(currentNavItems)
 			setOriginalData(current)
 			setOriginalCardStyles(currentCardStyles)
+			setOriginalNavItems(currentNavItems)
 			setFaviconItem(null)
 			setAvatarItem(null)
 			setArtImageUploads({})
@@ -50,7 +56,7 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 			setSocialButtonImageUploads({})
 			setActiveTab('site')
 		}
-	}, [open, siteContent, cardStyles])
+	}, [open, siteContent, cardStyles, navItems])
 
 	useEffect(() => {
 		return () => {
@@ -120,10 +126,12 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 				removedArtImages,
 				backgroundImageUploads,
 				removedBackgroundImages,
-				socialButtonImageUploads
+				socialButtonImageUploads,
+				navItemsData
 			)
 			setSiteContent(formData)
 			setCardStyles(cardStylesData)
+			setNavItems(navItemsData)
 			updateThemeVariables(formData.theme)
 			setFaviconItem(null)
 			setAvatarItem(null)
@@ -165,6 +173,7 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		// Restore to the state when dialog was opened
 		setSiteContent(originalData)
 		setCardStyles(originalCardStyles)
+		setNavItems(originalNavItems)
 		regenerateBubbles()
 		// Restore document title and meta if they were changed by preview
 		if (typeof document !== 'undefined') {
@@ -204,6 +213,7 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		console.log('formData', formData)
 		setSiteContent(formData)
 		setCardStyles(cardStylesData)
+		setNavItems(navItemsData)
 		regenerateBubbles()
 
 		// Update document title
@@ -224,7 +234,8 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 	const tabs: { id: TabType; label: string }[] = [
 		{ id: 'site', label: '网站设置' },
 		{ id: 'color', label: '色彩配置' },
-		{ id: 'layout', label: '首页布局' }
+		{ id: 'layout', label: '首页布局' },
+		{ id: 'nav', label: '导航菜单' }
 	]
 
 	return (
@@ -297,6 +308,7 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 					)}
 					{activeTab === 'color' && <ColorConfig formData={formData} setFormData={setFormData} />}
 					{activeTab === 'layout' && <HomeLayout cardStylesData={cardStylesData} setCardStylesData={setCardStylesData} onClose={onClose} />}
+					{activeTab === 'nav' && <NavConfig navItemsData={navItemsData} setNavItemsData={setNavItemsData} />}
 				</div>
 			</DialogModal>
 		</>

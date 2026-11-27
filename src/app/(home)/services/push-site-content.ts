@@ -3,7 +3,7 @@ import { getAuthToken } from '@/lib/auth'
 import { GITHUB_CONFIG } from '@/consts'
 import { toast } from 'sonner'
 import { fileToBase64NoPrefix } from '@/lib/file-utils'
-import type { SiteContent, CardStyles } from '../stores/config-store'
+import type { SiteContent, CardStyles, NavItemConfig } from '../stores/config-store'
 import type { FileItem, ArtImageUploads, SocialButtonImageUploads, BackgroundImageUploads } from '../config-dialog/site-settings'
 
 type ArtImageConfig = SiteContent['artImages'][number]
@@ -18,7 +18,8 @@ export async function pushSiteContent(
 	removedArtImages?: ArtImageConfig[],
 	backgroundImageUploads?: BackgroundImageUploads,
 	removedBackgroundImages?: BackgroundImageConfig[],
-	socialButtonImageUploads?: SocialButtonImageUploads
+	socialButtonImageUploads?: SocialButtonImageUploads,
+	navItems?: NavItemConfig[]
 ): Promise<void> {
 	const token = await getAuthToken()
 
@@ -187,6 +188,18 @@ export async function pushSiteContent(
 		type: 'blob',
 		sha: cardStylesBlob.sha
 	})
+
+	// Handle nav items JSON
+	if (navItems) {
+		const navItemsJson = JSON.stringify(navItems, null, '\t')
+		const navItemsBlob = await createBlob(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, toBase64Utf8(navItemsJson), 'base64')
+		treeItems.push({
+			path: 'src/config/nav-items.json',
+			mode: '100644',
+			type: 'blob',
+			sha: navItemsBlob.sha
+		})
+	}
 
 	toast.info('正在创建文件树...')
 	const treeData = await createTree(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, treeItems, latestCommitSha)

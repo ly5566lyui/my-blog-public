@@ -1,0 +1,68 @@
+[
+	{
+		"id": "blog",
+		"label": "近期文章",
+		"href": "/blog",
+		"icon": "scroll"
+	},
+	{
+		"id": "diary",
+		"label": "我的日记",
+		"href": "/diary",
+		"icon": "diary"
+	},
+	{
+		"id": "schedule",
+		"label": "日程计划",
+		"href": "/schedule",
+		"icon": "schedule"
+	},
+	{
+		"id": "footprints",
+		"label": "足迹地图",
+		"href": "/footprints",
+		"icon": "footprints"
+	},
+	{
+		"id": "media",
+		"label": "追番书影音",
+		"href": "/media",
+		"icon": "media"
+	},
+	{
+		"id": "projects",
+		"label": "我的项目",
+		"href": "/projects",
+		"icon": "projects"
+	},
+	{
+		"id": "share",
+		"label": "推荐分享",
+		"href": "/share",
+		"icon": "share"
+	},
+	{
+		"id": "bloggers",
+		"label": "优秀博客",
+		"href": "/bloggers",
+		"icon": "website"
+	},
+	{
+		"id": "timeline",
+		"label": "时间轴",
+		"href": "/schedule/timeline",
+		"icon": "timeline"
+	},
+	{
+		"id": "card-recorder",
+		"label": "卡片记录",
+		"href": "/card-recorder",
+		"icon": "card-record"
+	},
+	{
+		"id": "about",
+		"label": "关于网站",
+		"href": "/about",
+		"icon": "about"
+	}
+]
