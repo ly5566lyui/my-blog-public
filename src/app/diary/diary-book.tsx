@@ -10,6 +10,7 @@ import { readFileAsText } from '@/lib/file-utils'
 import initialEntries from './list.json'
 import { pushDiaryEntries } from './services/push-diary-entries'
 import type { DiaryEntry } from './types'
+import DiaryInsights from './diary-insights'
 
 const STORAGE_KEY = 'senyu-diary-entries-v1'
 function persistDraft(entries: DiaryEntry[]) {
@@ -53,6 +54,9 @@ export default function DiaryBook() {
 	const [title, setTitle] = useState('')
 	const [content, setContent] = useState('')
 	const [mood, setMood] = useState(moods[0])
+	const [selectedMood, setSelectedMood] = useState('全部')
+	const [searchQuery, setSearchQuery] = useState('')
+	const [highlightedId, setHighlightedId] = useState<string | null>(null)
 	const isAuthenticated = authStatus === 'authenticated' && isAuth
 
 	useEffect(() => {
@@ -104,6 +108,25 @@ export default function DiaryBook() {
 	}, [])
 
 	const sortedEntries = useMemo(() => [...entries].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()), [entries])
+
+	const filteredEntries = useMemo(() => {
+		const q = searchQuery.trim().toLowerCase()
+		return sortedEntries.filter(entry => {
+			if (selectedMood !== '全部' && entry.mood !== selectedMood) return false
+			if (q && !entry.title.toLowerCase().includes(q) && !entry.content.toLowerCase().includes(q)) return false
+			return true
+		})
+	}, [sortedEntries, selectedMood, searchQuery])
+
+	const handleJumpToEntry = (id: string) => {
+		setSelectedMood('全部')
+		setSearchQuery('')
+		setHighlightedId(id)
+		window.setTimeout(() => {
+			document.getElementById(`diary-entry-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+		}, 60)
+		window.setTimeout(() => setHighlightedId(prev => (prev === id ? null : prev)), 2200)
+	}
 
 	const resetEditor = () => {
 		setEditingId(null)
@@ -265,14 +288,14 @@ export default function DiaryBook() {
 								href='/'
 								className='mb-5 inline-flex min-h-11 items-center gap-2 rounded-full border border-white/60 bg-white/45 px-4 text-sm text-[#536453] shadow-sm backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#55784e]'>
 								<ArrowLeft aria-hidden='true' className='size-4' />
-								回到木牌
+								返回首页
 							</Link>
 							<div className='mb-3 flex items-center gap-2 text-sm font-medium tracking-[0.18em] text-[#6d7e68]'>
 								<Leaf aria-hidden='true' className='size-4' />
-								藤蔓里的日常
+								生活里的日常
 							</div>
-							<h1 className='text-4xl font-semibold tracking-[-0.04em] text-[#2f4538] sm:text-5xl'>木牌日记</h1>
-							<p className='mt-3 max-w-xl text-sm leading-7 text-[#66716a] sm:text-base'>藤蔓缠住四季，也收好每一页公开的日常。</p>
+							<h1 className='text-4xl font-semibold tracking-[-0.04em] text-[#2f4538] sm:text-5xl'>我的日记</h1>
+							<p className='mt-3 max-w-xl text-sm leading-7 text-[#66716a] sm:text-base'>收好每一页公开的日常、情绪与时光碎片。</p>
 						</div>
 						<div className='flex flex-wrap gap-2'>
 							{manageMode ? (
@@ -388,6 +411,17 @@ export default function DiaryBook() {
 						</section>
 					)}
 
+					{hydrated && sortedEntries.length > 0 && (
+						<DiaryInsights
+							entries={sortedEntries}
+							selectedMood={selectedMood}
+							onSelectMood={setSelectedMood}
+							searchQuery={searchQuery}
+							onSearchChange={setSearchQuery}
+							onJumpToEntry={handleJumpToEntry}
+						/>
+					)}
+
 					{!hydrated ? (
 						<div className='rounded-[32px] border border-white/60 bg-white/35 p-12 text-center text-sm text-[#718075] backdrop-blur-md'>正在翻开日记……</div>
 					) : sortedEntries.length === 0 ? (
@@ -396,7 +430,7 @@ export default function DiaryBook() {
 								<BookOpen aria-hidden='true' className='size-6' />
 							</div>
 							<h2 className='text-xl font-medium text-[#354b3c]'>这本日记还是空的</h2>
-							<p className='mt-2 text-sm leading-6 text-[#6d786f]'>{manageMode ? '从一句话开始，留下今天的第一页。' : '藤蔓正在等待第一段故事。'}</p>
+							<p className='mt-2 text-sm leading-6 text-[#6d786f]'>{manageMode ? '从一句话开始，留下今天的第一页。' : '等待第一段故事。'}</p>
 							{manageMode && (
 								<button
 									type='button'
@@ -407,12 +441,19 @@ export default function DiaryBook() {
 								</button>
 							)}
 						</section>
+					) : filteredEntries.length === 0 ? (
+						<section className='rounded-[32px] border border-dashed border-[#aebda9] bg-white/40 px-6 py-12 text-center text-sm text-[#6d786f] backdrop-blur-md'>
+							没有匹配「{searchQuery || selectedMood}」的日记
+						</section>
 					) : (
 						<div className='grid gap-5 sm:grid-cols-2'>
-							{sortedEntries.map(entry => (
+							{filteredEntries.map(entry => (
 								<article
+									id={`diary-entry-${entry.id}`}
 									key={entry.id}
-									className='group relative flex min-h-64 flex-col overflow-hidden rounded-[28px] border border-white/70 bg-[#fffdf7]/82 p-6 shadow-[0_22px_50px_-40px_rgba(43,62,47,0.75)] backdrop-blur-lg transition duration-200 hover:-translate-y-1 hover:shadow-[0_28px_60px_-38px_rgba(43,62,47,0.68)]'>
+									className={`group relative flex min-h-64 flex-col overflow-hidden rounded-[28px] border bg-[#fffdf7]/82 p-6 shadow-[0_22px_50px_-40px_rgba(43,62,47,0.75)] backdrop-blur-lg transition duration-200 hover:-translate-y-1 hover:shadow-[0_28px_60px_-38px_rgba(43,62,47,0.68)] ${
+										highlightedId === entry.id ? 'border-[#3f6248] ring-4 ring-[#3f6248]/20' : 'border-white/70'
+									}`}>
 									<div aria-hidden='true' className='absolute top-0 right-8 left-8 h-px bg-gradient-to-r from-transparent via-[#81987b]/55 to-transparent' />
 									<div className='mb-5 flex items-start justify-between gap-3'>
 										<div className='min-w-0'>

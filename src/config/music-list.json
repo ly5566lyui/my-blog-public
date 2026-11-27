@@ -1,0 +1,23 @@
+[
+	{
+		"id": "close-to-you",
+		"title": "Close To You",
+		"artist": "BGM Collection",
+		"url": "/music/close-to-you.mp3",
+		"lrc": "[00:00.00]Close To You\n[00:12.00]Why do birds suddenly appear\n[00:18.00]Every time you are near?\n[00:24.00]Just like me, they long to be\n[00:30.00]Close to you..."
+	},
+	{
+		"id": "secret-beat",
+		"title": "冬与你（秘密beat）",
+		"artist": "Lo-Fi Instrumental",
+		"url": "/music/秘密beat_085.mp3",
+		"lrc": "[00:00.00]纯音乐 · 冬与你（秘密beat）\n[00:15.00]放慢脚步，享受此刻的安静"
+	},
+	{
+		"id": "christmas",
+		"title": "Christmas",
+		"artist": "Holiday BGM",
+		"url": "/music/christmas.m4a",
+		"lrc": "[00:00.00]纯音乐 · Christmas\n[00:15.00]冬日暖灯与轻柔旋律"
+	}
+]

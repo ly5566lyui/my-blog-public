@@ -2,6 +2,7 @@ import { useCenterStore } from '@/hooks/use-center'
 import Card from '@/components/card'
 import { useConfigStore } from './stores/config-store'
 import { HomeDraggableLayer } from './home-draggable-layer'
+import LiveStatusBadge from './live-status-badge'
 import Link from 'next/link'
 
 function getGreeting() {
@@ -48,11 +49,12 @@ export default function HiCard() {
 					</>
 				)}
 				<Link href='/live2d'>
-					<img src='/images/avatar.png' className='mx-auto rounded-full' style={{ width: 120, height: 120, boxShadow: ' 0 16px 32px -5px #E2D9CE' }} />
+					<img src='/images/avatar.png' className='mx-auto rounded-full' style={{ width: 108, height: 108, boxShadow: ' 0 16px 32px -5px #E2D9CE' }} />
 				</Link>
-				<h1 className='font-averia mt-3 text-2xl'>
-					{greeting} <br /> I'm <span className='text-linear text-[32px]'>{username}</span> , Nice to <br /> meet you!
+				<h1 className='font-averia mt-2.5 text-2xl leading-tight'>
+					{greeting} <br /> I'm <span className='text-linear text-[30px]'>{username}</span> , Nice to <br /> meet you!
 				</h1>
+				<LiveStatusBadge />
 			</Card>
 		</HomeDraggableLayer>
 	)

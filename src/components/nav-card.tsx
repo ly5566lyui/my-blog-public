@@ -23,6 +23,7 @@ import TimelineOutlineSVG from '@/svgs/timeline-outline.svg'
 import TimelineFilledSVG from '@/svgs/timeline-filled.svg'
 import CardRecordOutlineSVG from '@/svgs/card-record-outline.svg'
 import CardRecordFilledSVG from '@/svgs/card-record-filled.svg'
+import { BookOpen, Clapperboard, MapPin } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import clsx from 'clsx'
 import { cn } from '@/lib/utils'
@@ -78,6 +79,24 @@ const list = [
 		iconActive: CardRecordFilledSVG,
 		label: '卡片记录',
 		href: '/card-recorder'
+	},
+	{
+		icon: BookOpen,
+		iconActive: BookOpen,
+		label: '我的日记',
+		href: '/diary'
+	},
+	{
+		icon: MapPin,
+		iconActive: MapPin,
+		label: '足迹地图',
+		href: '/footprints'
+	},
+	{
+		icon: Clapperboard,
+		iconActive: Clapperboard,
+		label: '追番书影音',
+		href: '/media'
 	}
 ]
 
